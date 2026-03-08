@@ -7,6 +7,7 @@ interface MetronomeState extends MetronomeConfig {
   currentBeat: number;
   // Actions
   setBpm: (bpm: number) => void;
+  setVolume: (volume: number) => void;
   setTimeSignature: (ts: TimeSignature) => void;
   toggleAccent: () => void;
   setSoundType: (type: ClickSound) => void;
@@ -33,6 +34,7 @@ export const useMetronomeStore = create<MetronomeState>((set, get) => ({
   timeSignature: '4/4' as TimeSignature,
   accentBeat1: true,
   soundType: 'click' as ClickSound,
+  volume: 80,
   isPlaying: false,
   currentBeat: 0,
 
@@ -42,6 +44,12 @@ export const useMetronomeStore = create<MetronomeState>((set, get) => ({
     if (get().isPlaying) {
       metronomeEngine.setBpm(clamped);
     }
+  },
+
+  setVolume: (volume: number) => {
+    const clamped = Math.max(0, Math.min(100, volume));
+    set({ volume: clamped });
+    metronomeEngine.setVolume(clamped);
   },
 
   setTimeSignature: (ts: TimeSignature) => {

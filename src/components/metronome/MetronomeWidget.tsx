@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useMetronomeStore } from '../../features/metronome/metronomeStore';
 import BeatIndicator from './BeatIndicator';
 import type { TimeSignature } from '../../types/metronome';
@@ -12,41 +12,56 @@ function getBeatsForSignature(ts: TimeSignature): number {
 
 const SPIN_BUTTON_HIDE = '[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none';
 
-/** Editable BPM input that looks like plain text until focused */
-function BpmInput({ bpm, setBpm, className }: {
-  bpm: number;
-  setBpm: (v: number) => void;
+/**
+ * Editable number input.
+ * - Typing updates slider in real-time (only when value is in range)
+ * - Out-of-range intermediate values (e.g. "5" while typing "50") are allowed in the input
+ * - On blur, value is clamped to [min, max]
+ */
+function NumberInput({ value, setValue, min, max, className }: {
+  value: number;
+  setValue: (v: number) => void;
+  min: number;
+  max: number;
   className: string;
 }) {
-  const [draft, setDraft] = useState(String(bpm));
-  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<string | null>(null);
+  const editing = draft !== null;
 
-  const commit = useCallback(() => {
-    setEditing(false);
-    const n = Number(draft);
-    if (!draft || isNaN(n)) {
-      setDraft(String(bpm));
-      return;
+  // Sync draft when store value changes externally (slider, ±buttons)
+  useEffect(() => {
+    if (editing) setDraft(String(value));
+  }, [value]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    setDraft(raw);
+    const n = Number(raw);
+    if (raw !== '' && !isNaN(n) && n >= min && n <= max) {
+      setValue(n); // in range → update store & slider immediately
     }
-    setBpm(n); // store handles clamping 40-200
-    setDraft(String(Math.max(40, Math.min(200, n))));
-  }, [draft, bpm, setBpm]);
+  };
 
-  // Sync external bpm changes (slider, ±buttons) when not editing
-  if (!editing && String(bpm) !== draft) {
-    setDraft(String(bpm));
-  }
+  const handleBlur = () => {
+    if (draft !== null) {
+      const n = Number(draft);
+      if (draft !== '' && !isNaN(n)) {
+        setValue(Math.max(min, Math.min(max, n))); // clamp on blur
+      }
+    }
+    setDraft(null);
+  };
 
   return (
     <input
       type="number"
       inputMode="numeric"
-      min={40}
-      max={200}
-      value={draft}
-      onChange={e => setDraft(e.target.value)}
-      onFocus={e => { setEditing(true); e.target.select(); }}
-      onBlur={commit}
+      min={min}
+      max={max}
+      value={editing ? draft : value}
+      onChange={handleChange}
+      onFocus={e => { setDraft(String(value)); e.target.select(); }}
+      onBlur={handleBlur}
       onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
       className={`${className} ${SPIN_BUTTON_HIDE} bg-transparent border-0 outline-none text-center focus:bg-blue-50 focus:rounded-lg transition-colors`}
     />
@@ -58,7 +73,7 @@ interface MetronomeWidgetProps {
 }
 
 export default function MetronomeWidget({ compact = false }: MetronomeWidgetProps) {
-  const { bpm, timeSignature, isPlaying, currentBeat, accentBeat1, setBpm, setTimeSignature, toggleAccent, toggle } =
+  const { bpm, volume, timeSignature, isPlaying, currentBeat, accentBeat1, setBpm, setVolume, setTimeSignature, toggleAccent, toggle } =
     useMetronomeStore();
 
   const totalBeats = getBeatsForSignature(timeSignature);
@@ -74,9 +89,11 @@ export default function MetronomeWidget({ compact = false }: MetronomeWidgetProp
         >
           {isPlaying ? '■' : '▶'}
         </button>
-        <BpmInput
-          bpm={bpm}
-          setBpm={setBpm}
+        <NumberInput
+          value={bpm}
+          setValue={setBpm}
+          min={40}
+          max={200}
           className="text-sm font-mono font-medium w-12 text-gray-800"
         />
         <input
@@ -96,9 +113,11 @@ export default function MetronomeWidget({ compact = false }: MetronomeWidgetProp
     <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-4">
       {/* BPM display + slider */}
       <div className="text-center">
-        <BpmInput
-          bpm={bpm}
-          setBpm={setBpm}
+        <NumberInput
+          value={bpm}
+          setValue={setBpm}
+          min={40}
+          max={200}
           className="text-5xl font-bold tabular-nums text-gray-800 w-32"
         />
         <div className="text-sm text-gray-400 mt-1">BPM</div>
@@ -118,6 +137,28 @@ export default function MetronomeWidget({ compact = false }: MetronomeWidgetProp
         <button onClick={() => setBpm(bpm - 5)} className="px-3 py-1 bg-gray-100 rounded text-sm hover:bg-gray-200">-5</button>
         <button onClick={() => setBpm(bpm + 5)} className="px-3 py-1 bg-gray-100 rounded text-sm hover:bg-gray-200">+5</button>
         <button onClick={() => setBpm(bpm + 1)} className="px-3 py-1 bg-gray-100 rounded text-sm hover:bg-gray-200">+1</button>
+      </div>
+
+      {/* Volume */}
+      <div className="flex items-center gap-2 px-2">
+        <span className="text-gray-400 text-sm" title="Volume">
+          {volume === 0 ? '🔇' : volume < 50 ? '🔈' : '🔊'}
+        </span>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          value={volume}
+          onChange={e => setVolume(Number(e.target.value))}
+          className="flex-1 accent-blue-600"
+        />
+        <NumberInput
+          value={volume}
+          setValue={setVolume}
+          min={0}
+          max={100}
+          className="text-xs text-gray-400 w-8 tabular-nums"
+        />
       </div>
 
       {/* Beat indicator */}

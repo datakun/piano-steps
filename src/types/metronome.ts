@@ -7,4 +7,5 @@ export interface MetronomeConfig {
   timeSignature: TimeSignature;
   accentBeat1: boolean;
   soundType: ClickSound;
+  volume: number; // 0–100 (default 80)
 }

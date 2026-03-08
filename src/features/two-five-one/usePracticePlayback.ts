@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import * as Tone from 'tone';
 import { useTwoFiveOneStore } from './twoFiveOneStore';
 import { useMetronomeStore } from '../metronome/metronomeStore';
+import { volumeToDb } from '../../lib/audio/metronomeEngine';
 
 /**
  * Hook that integrates Tone.js Transport with II-V-I practice playback.
@@ -14,6 +15,7 @@ export function usePracticePlayback() {
   const { playback, play, pause, stop, resetSession, setCurrentMeasure, setCurrentBeat } =
     useTwoFiveOneStore();
   const bpm = useMetronomeStore(s => s.bpm);
+  const volume = useMetronomeStore(s => s.volume);
   const timeSignature = useMetronomeStore(s => s.timeSignature);
 
   const beatsPerMeasure = timeSignature === '3/4' ? 3 : timeSignature === '6/8' ? 6 : 4;
@@ -39,17 +41,20 @@ export function usePracticePlayback() {
 
     Tone.getTransport().bpm.value = bpm;
 
-    // Create click synths
+    // Create click synths with shared volume
+    const highDb = volumeToDb(volume);
+    const lowDb = highDb - 4;
+
     const clickHigh = new Tone.Synth({
       oscillator: { type: 'sine' },
       envelope: { attack: 0.001, decay: 0.05, sustain: 0, release: 0.05 },
-      volume: -6,
+      volume: highDb,
     }).toDestination();
 
     const clickLow = new Tone.Synth({
       oscillator: { type: 'sine' },
       envelope: { attack: 0.001, decay: 0.05, sustain: 0, release: 0.05 },
-      volume: -10,
+      volume: lowDb,
     }).toDestination();
 
     loopRef.current = new Tone.Loop((time) => {
@@ -87,7 +92,7 @@ export function usePracticePlayback() {
     loopRef.current.start(0);
     Tone.getTransport().start();
     play();
-  }, [bpm, beatsPerMeasure, playback.totalMeasures, playback.isRepeating, playback.currentMeasure, cleanup, play, stop, setCurrentMeasure, setCurrentBeat]);
+  }, [bpm, volume, beatsPerMeasure, playback.totalMeasures, playback.isRepeating, playback.currentMeasure, cleanup, play, stop, setCurrentMeasure, setCurrentBeat]);
 
   const pausePlayback = useCallback(() => {
     Tone.getTransport().pause();
