@@ -10,8 +10,8 @@ interface MetronomeState extends MetronomeConfig {
   setTimeSignature: (ts: TimeSignature) => void;
   toggleAccent: () => void;
   setSoundType: (type: ClickSound) => void;
-  toggle: () => void;
-  start: () => void;
+  toggle: () => Promise<void>;
+  start: () => Promise<void>;
   stop: () => void;
 }
 
@@ -48,9 +48,8 @@ export const useMetronomeStore = create<MetronomeState>((set, get) => ({
     set({ timeSignature: ts });
     const state = get();
     if (state.isPlaying) {
-      // Restart with new time signature
       state.stop();
-      setTimeout(() => state.start(), 50);
+      setTimeout(() => void state.start(), 50);
     }
   },
 
@@ -59,25 +58,25 @@ export const useMetronomeStore = create<MetronomeState>((set, get) => ({
     const state = get();
     if (state.isPlaying) {
       state.stop();
-      setTimeout(() => state.start(), 50);
+      setTimeout(() => void state.start(), 50);
     }
   },
 
   setSoundType: (type: ClickSound) => set({ soundType: type }),
 
-  toggle: () => {
+  toggle: async () => {
     const state = get();
     if (state.isPlaying) {
       state.stop();
     } else {
-      state.start();
+      await state.start();
     }
   },
 
-  start: () => {
+  start: async () => {
     const state = get();
     const beats = getBeatsPerMeasure(state.timeSignature);
-    metronomeEngine.start(state.bpm, beats, state.accentBeat1, (beat) => {
+    await metronomeEngine.start(state.bpm, beats, state.accentBeat1, (beat) => {
       set({ currentBeat: beat });
     });
     set({ isPlaying: true, currentBeat: 0 });

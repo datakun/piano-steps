@@ -23,7 +23,7 @@ interface JazzHanonState {
   setCurrentBeat: (b: number) => void;
 }
 
-export const useJazzHanonStore = create<JazzHanonState>((set, get) => ({
+export const useJazzHanonStore = create<JazzHanonState>((set, _get) => ({
   selectedExercise: 1,
   selectedKey: 'C',
   playback: {

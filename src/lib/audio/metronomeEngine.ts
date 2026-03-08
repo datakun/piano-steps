@@ -3,7 +3,6 @@ import * as Tone from 'tone';
 export type MetronomeTickCallback = (beat: number, time: number) => void;
 
 class MetronomeEngine {
-  private synth: Tone.MembraneSynth | null = null;
   private clickHigh: Tone.Synth | null = null;
   private clickLow: Tone.Synth | null = null;
   private loop: Tone.Loop | null = null;

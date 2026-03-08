@@ -46,7 +46,7 @@ function p(name: string, octave: number): Pitch {
  * Each chord: up through chord tones, then back down
  */
 function pattern1(): Pitch[][] {
-  return DIATONIC_TONES.map((chord, idx) => {
+  return DIATONIC_TONES.map((chord) => {
     const baseOct = 4;
     const [r, t3, t5, t7] = chord.tones;
     // Up: 1 3 5 7, then down: 8(next octave root) 7 5 3

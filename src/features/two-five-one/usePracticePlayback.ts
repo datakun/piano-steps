@@ -11,7 +11,7 @@ export function usePracticePlayback() {
   const loopRef = useRef<Tone.Loop | null>(null);
   const beatRef = useRef(0);
 
-  const { playback, progressions, play, pause, stop, resetSession, setCurrentMeasure, setCurrentBeat } =
+  const { playback, play, pause, stop, resetSession, setCurrentMeasure, setCurrentBeat } =
     useTwoFiveOneStore();
   const bpm = useMetronomeStore(s => s.bpm);
   const timeSignature = useMetronomeStore(s => s.timeSignature);
