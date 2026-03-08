@@ -11,6 +11,7 @@ import { volumeToDb } from '../../lib/audio/metronomeEngine';
 export function usePracticePlayback() {
   const loopRef = useRef<Tone.Loop | null>(null);
   const beatRef = useRef(0);
+  const isRepeatingRef = useRef(false);
 
   const { playback, play, pause, stop, resetSession, setCurrentMeasure, setCurrentBeat } =
     useTwoFiveOneStore();
@@ -18,7 +19,14 @@ export function usePracticePlayback() {
   const volume = useMetronomeStore(s => s.volume);
   const timeSignature = useMetronomeStore(s => s.timeSignature);
 
-  const beatsPerMeasure = timeSignature === '3/4' ? 3 : timeSignature === '6/8' ? 6 : 4;
+  const compound = timeSignature === '6/8' || timeSignature === '7/8';
+  const beatsPerMeasureMap: Record<string, number> = {
+    '2/4': 2, '3/4': 3, '4/4': 4, '5/4': 5, '6/8': 6, '7/8': 7,
+  };
+  const beatsPerMeasure = beatsPerMeasureMap[timeSignature] ?? 4;
+
+  // Keep ref in sync with store so the Tone.js loop reads the latest value
+  isRepeatingRef.current = playback.isRepeating;
 
   const cleanup = useCallback(() => {
     if (loopRef.current) {
@@ -35,11 +43,11 @@ export function usePracticePlayback() {
     cleanup();
 
     const totalMeasures = playback.totalMeasures;
-    const isRepeating = playback.isRepeating;
     let currentMeasure = playback.currentMeasure;
     beatRef.current = 0;
 
-    Tone.getTransport().bpm.value = bpm;
+    // For compound meters (6/8, 7/8): BPM = dotted quarter, transport uses quarter-note BPM
+    Tone.getTransport().bpm.value = compound ? bpm * 1.5 : bpm;
 
     // Create click synths with shared volume
     const highDb = volumeToDb(volume);
@@ -74,12 +82,16 @@ export function usePracticePlayback() {
       beatRef.current++;
       if (beatRef.current >= beatsPerMeasure) {
         beatRef.current = 0;
+        const progStart = Math.floor(currentMeasure / 4) * 4;
         currentMeasure++;
-        if (currentMeasure >= totalMeasures) {
-          if (isRepeating) {
-            currentMeasure = 0;
-          } else {
-            // Stop at end
+
+        // Crossed a 4-measure progression boundary?
+        if (currentMeasure % 4 === 0) {
+          if (isRepeatingRef.current) {
+            // Repeat current progression
+            currentMeasure = progStart;
+          } else if (currentMeasure >= totalMeasures) {
+            // End of session
             Tone.getDraw().schedule(() => {
               stop();
             }, time);
@@ -87,12 +99,12 @@ export function usePracticePlayback() {
           }
         }
       }
-    }, '4n');
+    }, compound ? '8n' : '4n');
 
     loopRef.current.start(0);
     Tone.getTransport().start();
     play();
-  }, [bpm, volume, beatsPerMeasure, playback.totalMeasures, playback.isRepeating, playback.currentMeasure, cleanup, play, stop, setCurrentMeasure, setCurrentBeat]);
+  }, [bpm, volume, beatsPerMeasure, compound, playback.totalMeasures, playback.currentMeasure, cleanup, play, stop, setCurrentMeasure, setCurrentBeat]);
 
   const pausePlayback = useCallback(() => {
     Tone.getTransport().pause();

@@ -70,31 +70,42 @@ function NumberInput({ value, setValue, min, max, className }: {
 
 interface MetronomeWidgetProps {
   compact?: boolean;
+  /** Hide the standalone play/stop button (use when another playback controls the metronome) */
+  hidePlayButton?: boolean;
+  /** Remove card styling (border, background) — use when embedding in a larger card */
+  unstyled?: boolean;
+  /** Hide beat indicator dots — use when rendering them separately */
+  hideBeatIndicator?: boolean;
 }
 
-export default function MetronomeWidget({ compact = false }: MetronomeWidgetProps) {
+export default function MetronomeWidget({ compact = false, hidePlayButton = false, unstyled = false, hideBeatIndicator = false }: MetronomeWidgetProps) {
   const { bpm, volume, timeSignature, isPlaying, currentBeat, accentBeat1, setBpm, setVolume, setTimeSignature, toggleAccent, toggle } =
     useMetronomeStore();
 
   const totalBeats = getBeatsForSignature(timeSignature);
 
   if (compact) {
+    const wrapperClass = unstyled
+      ? 'flex items-center gap-2 flex-1 min-w-0'
+      : 'flex items-center gap-3 bg-white border border-gray-200 rounded-lg px-3 py-2';
     return (
-      <div className="flex items-center gap-3 bg-white border border-gray-200 rounded-lg px-3 py-2">
-        <button
-          onClick={toggle}
-          className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm ${
-            isPlaying ? 'bg-red-500' : 'bg-blue-600'
-          }`}
-        >
-          {isPlaying ? '■' : '▶'}
-        </button>
+      <div className={wrapperClass}>
+        {!hidePlayButton && (
+          <button
+            onClick={toggle}
+            className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm ${
+              isPlaying ? 'bg-red-500' : 'bg-blue-600'
+            }`}
+          >
+            {isPlaying ? '■' : '▶'}
+          </button>
+        )}
         <NumberInput
           value={bpm}
           setValue={setBpm}
           min={40}
           max={200}
-          className="text-sm font-mono font-medium w-12 text-gray-800"
+          className="text-xs font-mono font-medium w-7 text-gray-800"
         />
         <input
           type="range"
@@ -102,9 +113,11 @@ export default function MetronomeWidget({ compact = false }: MetronomeWidgetProp
           max={200}
           value={bpm}
           onChange={e => setBpm(Number(e.target.value))}
-          className="w-24 accent-blue-600"
+          className="flex-1 min-w-0 accent-blue-600"
         />
-        <BeatIndicator totalBeats={totalBeats} currentBeat={currentBeat} isPlaying={isPlaying} />
+        {!hideBeatIndicator && (
+          <BeatIndicator totalBeats={totalBeats} currentBeat={currentBeat} isPlaying={isPlaying} />
+        )}
       </div>
     );
   }

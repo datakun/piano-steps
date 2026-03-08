@@ -28,6 +28,11 @@ function getBeatsPerMeasure(ts: TimeSignature): number {
   }
 }
 
+/** x/8 time signatures are compound — BPM means dotted quarter, clicks on 8th notes */
+function isCompound(ts: TimeSignature): boolean {
+  return ts === '6/8' || ts === '7/8';
+}
+
 export const useMetronomeStore = create<MetronomeState>((set, get) => ({
   // Initial state
   bpm: 120,
@@ -84,9 +89,10 @@ export const useMetronomeStore = create<MetronomeState>((set, get) => ({
   start: async () => {
     const state = get();
     const beats = getBeatsPerMeasure(state.timeSignature);
+    const compound = isCompound(state.timeSignature);
     await metronomeEngine.start(state.bpm, beats, state.accentBeat1, (beat) => {
       set({ currentBeat: beat });
-    });
+    }, compound);
     set({ isPlaying: true, currentBeat: 0 });
   },
 

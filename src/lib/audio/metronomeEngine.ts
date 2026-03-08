@@ -20,6 +20,7 @@ class MetronomeEngine {
   private _beat = 0;
   private _beatsPerMeasure = 4;
   private _volume = 80; // 0–100
+  private _compound = false; // true for x/8 time signatures
 
   private ensureSynths() {
     const highDb = volumeToDb(this._volume);
@@ -45,16 +46,24 @@ class MetronomeEngine {
     bpm: number,
     beatsPerMeasure: number,
     accentBeat1: boolean,
-    onTick: MetronomeTickCallback
+    onTick: MetronomeTickCallback,
+    compound = false,
   ) {
     await Tone.start();
     this.ensureSynths();
 
     this._beatsPerMeasure = beatsPerMeasure;
     this._beat = 0;
-    Tone.getTransport().bpm.value = bpm;
+    this._compound = compound;
+
+    // For compound meters (6/8, 7/8): BPM = dotted quarter note
+    // Transport uses quarter-note BPM, so multiply by 1.5
+    // Loop fires on 8th notes instead of quarter notes
+    Tone.getTransport().bpm.value = compound ? bpm * 1.5 : bpm;
 
     this.stop();
+
+    const subdivision = compound ? '8n' : '4n';
 
     this.loop = new Tone.Loop((time) => {
       const isAccent = accentBeat1 && this._beat === 0;
@@ -68,7 +77,7 @@ class MetronomeEngine {
       }, time);
 
       this._beat = (this._beat + 1) % this._beatsPerMeasure;
-    }, '4n');
+    }, subdivision);
 
     this.loop.start(0);
     Tone.getTransport().start();
@@ -88,7 +97,7 @@ class MetronomeEngine {
   }
 
   setBpm(bpm: number) {
-    Tone.getTransport().bpm.value = bpm;
+    Tone.getTransport().bpm.value = this._compound ? bpm * 1.5 : bpm;
   }
 
   /** Update volume (0–100). Takes effect immediately if synths exist. */

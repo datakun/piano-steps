@@ -11,6 +11,8 @@ interface PlaybackControlsProps {
   onRepeatToggle: () => void;
   onPrev: () => void;
   onNext: () => void;
+  /** Remove card styling (border, background) — use when embedding in a larger card */
+  unstyled?: boolean;
 }
 
 export default function PlaybackControls({
@@ -24,9 +26,13 @@ export default function PlaybackControls({
   onRepeatToggle,
   onPrev,
   onNext,
+  unstyled = false,
 }: PlaybackControlsProps) {
+  const wrapperClass = unstyled
+    ? 'flex items-center gap-2'
+    : 'flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2 shadow-sm';
   return (
-    <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2 shadow-sm">
+    <div className={wrapperClass}>
       {/* Previous */}
       <button
         onClick={onPrev}

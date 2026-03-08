@@ -3,9 +3,15 @@ import { usePracticePlayback } from './usePracticePlayback';
 import ProgressionDisplay from './ProgressionDisplay';
 import PlaybackControls from '../../components/playback/PlaybackControls';
 import MetronomeWidget from '../../components/metronome/MetronomeWidget';
+import { useMetronomeStore } from '../metronome/metronomeStore';
 import { useModuleMetronome } from '../metronome/useModuleMetronome';
 import { ALL_ROOTS } from '../../data/chords';
 import type { NoteName } from '../../types/music';
+import type { TimeSignature } from '../../types/metronome';
+
+const BEATS_MAP: Record<TimeSignature, number> = {
+  '2/4': 2, '3/4': 3, '4/4': 4, '5/4': 5, '6/8': 6, '7/8': 7,
+};
 
 export default function TwoFiveOnePage() {
   useModuleMetronome('two-five-one');
@@ -17,6 +23,12 @@ export default function TwoFiveOnePage() {
   } = useTwoFiveOneStore();
 
   const { startPlayback, pausePlayback, stopPlayback } = usePracticePlayback();
+  const { timeSignature, setTimeSignature } = useMetronomeStore();
+
+  // Beat indicator uses playback state from twoFiveOneStore (not metronomeStore)
+  const practiceIsPlaying = playback.status === 'playing';
+  const practiceBeat = playback.currentBeat;
+  const controlsDisabled = playback.status !== 'stopped';
 
   // Calculate which progression and local measure is active
   // Each progression = 4 measures (2 bars × 2 repeats)
@@ -28,11 +40,6 @@ export default function TwoFiveOnePage() {
     return (
       <div className="p-6 max-w-lg mx-auto">
         <h1 className="text-xl font-bold mb-4">II-V-I Practice</h1>
-
-        {/* Metronome (tempo setting) */}
-        <div className="mb-4">
-          <MetronomeWidget compact />
-        </div>
 
         {/* Settings */}
         <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-4">
@@ -107,21 +114,72 @@ export default function TwoFiveOnePage() {
   }
 
   return (
-    <div className="p-4 md:p-6 max-w-2xl mx-auto">
-      <div className="flex items-center justify-between mb-3">
-        <h1 className="text-xl font-bold">II-V-I Practice</h1>
-        <button
-          onClick={() => { stopPlayback(); resetSession(); }}
-          className="text-sm text-gray-500 hover:text-gray-700 px-3 py-1 border border-gray-200 rounded-lg"
-        >
-          New Session
-        </button>
+    <div className="max-w-2xl mx-auto">
+      {/* Sticky header: unified control panel */}
+      <div className="sticky top-0 z-30 bg-gray-50 px-3 md:px-5 pt-3 md:pt-5 pb-3">
+        <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-sm space-y-2.5">
+          {/* Title row */}
+          <div className="flex items-center justify-between">
+            <h1 className="text-lg font-bold">II-V-I Practice</h1>
+            <button
+              onClick={() => { stopPlayback(); resetSession(); }}
+              className="text-xs text-gray-500 hover:text-gray-700 px-2.5 py-1 border border-gray-200 rounded-lg"
+            >
+              New Session
+            </button>
+          </div>
+
+          {/* Time sig + BPM + slider + beat indicator — single row */}
+          <div className="flex items-center gap-2">
+            <div className={`flex items-center gap-2 flex-1 min-w-0${controlsDisabled ? ' opacity-50 pointer-events-none' : ''}`}>
+              <select
+                value={timeSignature}
+                onChange={e => setTimeSignature(e.target.value as TimeSignature)}
+                disabled={controlsDisabled}
+                className="border border-gray-200 rounded-lg px-2 py-1 text-xs bg-white shrink-0"
+              >
+                <option value="2/4">2/4</option>
+                <option value="3/4">3/4</option>
+                <option value="4/4">4/4</option>
+                <option value="5/4">5/4</option>
+                <option value="6/8">6/8</option>
+              </select>
+              <MetronomeWidget compact hidePlayButton unstyled hideBeatIndicator />
+            </div>
+            <div className="flex gap-1.5 shrink-0">
+              {Array.from({ length: BEATS_MAP[timeSignature] ?? 4 }, (_, i) => (
+                <div
+                  key={i}
+                  className={`w-2.5 h-2.5 rounded-full transition-all duration-75 ${
+                    practiceIsPlaying && practiceBeat === i
+                      ? i === 0 ? 'bg-red-500 scale-125' : 'bg-blue-500 scale-125'
+                      : 'bg-gray-300'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Playback controls */}
+          <div className="flex justify-center">
+            <PlaybackControls
+              status={playback.status}
+              currentMeasure={playback.currentMeasure}
+              totalMeasures={playback.totalMeasures}
+              isRepeating={playback.isRepeating}
+              onPlay={startPlayback}
+              onPause={pausePlayback}
+              onStop={stopPlayback}
+              onRepeatToggle={toggleRepeat}
+              onPrev={prevMeasure}
+              onNext={nextMeasure}
+              unstyled
+            />
+          </div>
+        </div>
       </div>
 
-      {/* Metronome widget */}
-      <div className="mb-3">
-        <MetronomeWidget compact />
-      </div>
+      <div className="px-4 md:px-6 pb-4 md:pb-6 pt-3">
 
       {/* Form toggle */}
       <div className="flex gap-2 mb-4">
@@ -182,21 +240,6 @@ export default function TwoFiveOnePage() {
           </button>
         ))}
       </div>
-
-      {/* Playback controls */}
-      <div className="mt-4 flex justify-center">
-        <PlaybackControls
-          status={playback.status}
-          currentMeasure={playback.currentMeasure}
-          totalMeasures={playback.totalMeasures}
-          isRepeating={playback.isRepeating}
-          onPlay={startPlayback}
-          onPause={pausePlayback}
-          onStop={stopPlayback}
-          onRepeatToggle={toggleRepeat}
-          onPrev={prevMeasure}
-          onNext={nextMeasure}
-        />
       </div>
     </div>
   );
