@@ -91,6 +91,21 @@ const FLAT_TO_SHARP: Record<string, NoteName> = {
   'Gb': 'F#', 'Db': 'C#', 'Ab': 'G#', 'Eb': 'D#', 'Bb': 'A#',
 };
 
+/**
+ * 음들의 스팬이 12반음(옥타브)을 초과하면
+ * 최저음을 옥타브 위로 올려서 close voicing으로 만듦.
+ */
+export function compactVoicing(notes: Pitch[]): Pitch[] {
+  if (notes.length <= 1) return notes;
+  const sorted = [...notes].sort((a, b) => a.midi - b.midi);
+  while (sorted.length > 1 && sorted[sorted.length - 1].midi - sorted[0].midi > 12) {
+    const lowest = sorted.shift()!;
+    sorted.push(pitch(lowest.name, lowest.octave + 1));
+    sorted.sort((a, b) => a.midi - b.midi);
+  }
+  return sorted;
+}
+
 export function respellForKey(p: Pitch, key: NoteName): Pitch {
   const semitones = SHARP_KEY_SEMITONES[key];
   if (!semitones) return p;

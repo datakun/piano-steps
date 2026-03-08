@@ -38,76 +38,82 @@ export default function TwoFiveOnePage() {
 
   if (!isSessionStarted) {
     return (
-      <div className="p-6 max-w-lg mx-auto">
-        <h1 className="text-xl font-bold mb-4">II-V-I Practice</h1>
+      <div className="max-w-lg mx-auto">
+        {/* Action bar */}
+        <div className="sticky top-0 z-30 bg-gray-50 px-4 md:px-6 pt-4 md:pt-6 pb-3">
+          <div className="flex items-center justify-between">
+            <h1 className="text-lg font-bold">II-V-I Practice</h1>
+            <button
+              onClick={startSession}
+              className="px-4 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+            >
+              Start
+            </button>
+          </div>
+        </div>
 
         {/* Settings */}
-        <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-4">
-          <div>
-            <label className="text-sm text-gray-500 block mb-1">Mode</label>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setMode('chromatic')}
-                className={`flex-1 py-2 rounded-lg text-sm border ${
-                  mode === 'chromatic' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'border-gray-200'
-                }`}
-              >
-                Chromatic Down
-              </button>
-              <button
-                onClick={() => setMode('random')}
-                className={`flex-1 py-2 rounded-lg text-sm border ${
-                  mode === 'random' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'border-gray-200'
-                }`}
-              >
-                Random
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <label className="text-sm text-gray-500 block mb-1">Form</label>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setForm('A')}
-                className={`flex-1 py-2 rounded-lg text-sm border ${
-                  form === 'A' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'border-gray-200'
-                }`}
-              >
-                A (Open / Drop 2)
-              </button>
-              <button
-                onClick={() => setForm('B')}
-                className={`flex-1 py-2 rounded-lg text-sm border ${
-                  form === 'B' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'border-gray-200'
-                }`}
-              >
-                B (Close)
-              </button>
-            </div>
-          </div>
-
-          {mode === 'chromatic' && (
+        <div className="px-4 md:px-6 pb-6">
+          <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-4">
             <div>
-              <label className="text-sm text-gray-500 block mb-1">Start Key</label>
-              <select
-                value={startKey}
-                onChange={e => setStartKey(e.target.value as NoteName)}
-                className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white w-full"
-              >
-                {ALL_ROOTS.map(r => (
-                  <option key={r} value={r}>{r}</option>
-                ))}
-              </select>
+              <label className="text-sm text-gray-500 block mb-1">Mode</label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setMode('chromatic')}
+                  className={`flex-1 py-2 rounded-lg text-sm border ${
+                    mode === 'chromatic' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'border-gray-200'
+                  }`}
+                >
+                  Chromatic Down
+                </button>
+                <button
+                  onClick={() => setMode('random')}
+                  className={`flex-1 py-2 rounded-lg text-sm border ${
+                    mode === 'random' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'border-gray-200'
+                  }`}
+                >
+                  Random
+                </button>
+              </div>
             </div>
-          )}
 
-          <button
-            onClick={startSession}
-            className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
-          >
-            Start Practice
-          </button>
+            <div>
+              <label className="text-sm text-gray-500 block mb-1">Form</label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setForm('A')}
+                  className={`flex-1 py-2 rounded-lg text-sm border ${
+                    form === 'A' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'border-gray-200'
+                  }`}
+                >
+                  A (Open / Drop 2)
+                </button>
+                <button
+                  onClick={() => setForm('B')}
+                  className={`flex-1 py-2 rounded-lg text-sm border ${
+                    form === 'B' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'border-gray-200'
+                  }`}
+                >
+                  B (Close)
+                </button>
+              </div>
+            </div>
+
+            {mode === 'chromatic' && (
+              <div>
+                <label className="text-sm text-gray-500 block mb-1">Start Key</label>
+                <select
+                  value={startKey}
+                  onChange={e => setStartKey(e.target.value as NoteName)}
+                  className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white w-full"
+                >
+                  {ALL_ROOTS.map(r => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );

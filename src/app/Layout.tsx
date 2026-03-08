@@ -58,7 +58,7 @@ export default function Layout() {
       </nav>
 
       {/* Main content */}
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto overscroll-none">
         <Outlet />
       </main>
 
@@ -73,7 +73,7 @@ export default function Layout() {
         )}
 
         {/* Menu items */}
-        <div className="fixed bottom-20 right-4 z-50 flex flex-col gap-2">
+        <div className={`fixed bottom-20 right-4 z-50 flex flex-col gap-2${menuOpen ? '' : ' pointer-events-none'}`}>
           {navItems.map((item, idx) => {
             const isActive = item.to === '/'
               ? location.pathname === '/'
@@ -106,7 +106,7 @@ export default function Layout() {
           className={`fixed bottom-6 right-4 z-50 w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-all duration-200 ${
             menuOpen
               ? 'bg-gray-700 text-white'
-              : 'bg-blue-600 text-white'
+              : 'bg-amber-500 text-white'
           }`}
         >
           {menuOpen ? <CloseIcon /> : <MenuIcon />}

@@ -103,18 +103,23 @@ export function buildProgression(key: NoteName, form: 'A' | 'B'): Progression {
 }
 
 /**
- * Generate 8 progressions in chromatic descending order.
- * Start from startKey and go down by half steps.
+ * Generate progressions descending by whole tones (2 semitones).
+ * First exhausts one whole-tone set, then continues with the other.
+ * e.g. C → Bb → Ab → Gb → E → D → F → Eb → Db → B → A → G
  */
 export function generateChromaticProgressions(
   startKey: NoteName,
   form: 'A' | 'B',
-  count = 8
+  count = 12
 ): Progression[] {
   const startSemitone = noteToSemitone(startKey);
   const progressions: Progression[] = [];
+  // Set 1: start, start-2, start-4, ... (6 keys, e.g. C Bb Ab Gb E D)
+  // Set 2: start+5, start+3, start+1, ... (6 keys, e.g. F Eb Db B A G)
   for (let i = 0; i < count; i++) {
-    const sem = ((startSemitone - i) % 12 + 12) % 12;
+    const indexInSet = i < 6 ? i : i - 6;
+    const base = i < 6 ? startSemitone : startSemitone + 5;
+    const sem = ((base - indexInSet * 2) % 12 + 12) % 12;
     const key = semitoneToNote(sem, true);
     progressions.push(buildProgression(key, form));
   }
@@ -124,7 +129,7 @@ export function generateChromaticProgressions(
 /**
  * Generate 8 progressions with random starting keys.
  */
-export function generateRandomProgressions(form: 'A' | 'B', count = 8): Progression[] {
+export function generateRandomProgressions(form: 'A' | 'B', count = 12): Progression[] {
   const allKeys: NoteName[] = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
   const shuffled = [...allKeys].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, count).map(key => buildProgression(key, form));

@@ -65,19 +65,21 @@ export default function GrandStaff({
     if (numMeasures === 1) {
       measureWidths = [staveWidth];
     } else {
-      // First measure gets 55% (clef + key sig take space)
-      const firstW = Math.round(staveWidth * 0.55);
+      // First measure gets 70% (clef + key sig + 2 chords), second measure 30%
+      const firstW = Math.round(staveWidth * 0.70);
       const otherW = Math.round((staveWidth - firstW) / (numMeasures - 1));
       measureWidths = [firstW, ...Array(numMeasures - 1).fill(otherW)];
     }
 
     const startX = 10;
     const totalWidth = width ?? (startX + staveWidth + 10);
-    const trebleY = 10;
-    const bassY = 110;
+    const hasLabels = measureLabels && measureLabels.some(m => m && m.length > 0);
+    const labelPadding = hasLabels ? 20 : 0;
+    const trebleY = 10 + labelPadding;
+    const bassY = 110 + labelPadding;
 
     const renderer = new Renderer(containerRef.current, Renderer.Backends.SVG);
-    renderer.resize(totalWidth, height);
+    renderer.resize(totalWidth, height + labelPadding);
     const context = renderer.getContext();
 
     let currentX = startX;
@@ -181,6 +183,20 @@ export default function GrandStaff({
               const labelText = measureLabels[m][i];
               if (!labelText) return;
               const x = note.getAbsoluteX();
+              const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+
+              // Invisible rect for larger touch target on mobile
+              const hitArea = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+              hitArea.setAttribute('x', String(x - 6));
+              hitArea.setAttribute('y', String(trebleY - 18));
+              hitArea.setAttribute('width', '52');
+              hitArea.setAttribute('height', '26');
+              hitArea.setAttribute('fill', 'white');
+              hitArea.setAttribute('fill-opacity', '0.01');
+              hitArea.setAttribute('stroke', 'none');
+              hitArea.setAttribute('pointer-events', 'all');
+              g.appendChild(hitArea);
+
               const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
               text.setAttribute('x', String(x));
               text.setAttribute('y', String(trebleY));
@@ -188,14 +204,16 @@ export default function GrandStaff({
               text.setAttribute('font-family', 'ui-monospace, monospace');
               text.setAttribute('fill', '#374151');
               text.textContent = labelText;
+              g.appendChild(text);
+
               if (onLabelClick) {
-                text.style.cursor = 'pointer';
+                g.style.cursor = 'pointer';
                 const mIdx = m, cIdx = i;
-                text.addEventListener('click', () => onLabelClick(mIdx, cIdx));
-                text.addEventListener('mouseenter', () => text.setAttribute('fill', '#2563eb'));
-                text.addEventListener('mouseleave', () => text.setAttribute('fill', '#374151'));
+                g.addEventListener('click', () => onLabelClick(mIdx, cIdx));
+                g.addEventListener('mouseenter', () => text.setAttribute('fill', '#2563eb'));
+                g.addEventListener('mouseleave', () => text.setAttribute('fill', '#374151'));
               }
-              svg.appendChild(text);
+              svg.appendChild(g);
             });
           }
         }

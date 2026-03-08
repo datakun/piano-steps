@@ -3,12 +3,12 @@ import type { NoteName } from '../../types/music';
 import type { PlaybackState } from '../../types/playback';
 
 interface JazzHanonState {
-  selectedExercise: number; // Exercise ID (1-6)
+  selectedExercise: number | string; // number for built-in, string for custom
   selectedKey: NoteName;
   playback: PlaybackState;
   isSessionStarted: boolean;
 
-  setExercise: (id: number) => void;
+  setExercise: (id: number | string) => void;
   setKey: (key: NoteName) => void;
   startSession: () => void;
   resetSession: () => void;

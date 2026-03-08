@@ -1,11 +1,12 @@
 import { useRef, useEffect } from 'react';
-import { Renderer, Stave, StaveNote, Voice, Formatter, Accidental } from 'vexflow';
+import { Renderer, Stave, StaveNote, Voice, Formatter, Accidental, Annotation } from 'vexflow';
 import type { Pitch } from '../../types/music';
 
 export interface MeasureData {
   notes: Pitch[][];         // Array of chords (each chord is Pitch[])
   durations?: string[];     // VexFlow durations ('w', 'h', 'q', '8'). Default: 'w'
   clef?: 'treble' | 'bass';
+  fingerings?: string[];    // Fingering number per note position (displayed below)
 }
 
 interface StaffRendererProps {
@@ -76,6 +77,15 @@ export default function StaffRenderer({
             note.addModifier(new Accidental(acc), keyIdx);
           }
         });
+
+        // Add fingering annotation below note
+        const fingering = measure.fingerings?.[nIdx];
+        if (fingering) {
+          const ann = new Annotation(fingering);
+          ann.setVerticalJustification(Annotation.VerticalJustify.BOTTOM);
+          ann.setFont('Arial', 11, 'normal');
+          note.addModifier(ann, 0);
+        }
 
         // Highlight active note
         if (activeNoteIndex !== undefined) {

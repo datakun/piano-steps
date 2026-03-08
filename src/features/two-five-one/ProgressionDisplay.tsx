@@ -1,9 +1,10 @@
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useRef, useEffect } from 'react';
 import type { Progression } from '../../types/music';
 import GrandStaff from '../../components/notation/GrandStaff';
 import type { GrandStaffChord } from '../../components/notation/GrandStaff';
 import PianoKeyboard from '../../components/piano/PianoKeyboard';
 import type { NoteHighlight } from '../../components/piano/PianoKeyboard';
+import { compactVoicing } from '../../lib/music/noteUtils';
 
 interface ProgressionDisplayProps {
   progression: Progression;
@@ -19,6 +20,22 @@ export default function ProgressionDisplay({
   isCurrent = false,
 }: ProgressionDisplayProps) {
   const [selectedChordIdx, setSelectedChordIdx] = useState<number | null>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
+
+  // Measure container width for responsive notation
+  useEffect(() => {
+    if (!cardRef.current) return;
+    const ro = new ResizeObserver(entries => {
+      const w = entries[0]?.contentRect.width ?? 0;
+      setContainerWidth(w);
+    });
+    ro.observe(cardRef.current);
+    return () => ro.disconnect();
+  }, []);
+
+  // Dynamic stave width: container padding (p-3 = 12px × 2) + SVG internal padding (10px × 2)
+  const dynamicStaveWidth = Math.max(200, containerWidth - 24 - 20);
 
   // 2-measure layout:
   // Measure 1: IIm7 (half note) + V7 (half note)
@@ -27,11 +44,11 @@ export default function ProgressionDisplay({
     const [ii, v, i] = progression.chords;
     return [
       [
-        { treble: ii.rightHand, bass: ii.leftHand, duration: 'h' },
-        { treble: v.rightHand, bass: v.leftHand, duration: 'h' },
+        { treble: compactVoicing(ii.rightHand), bass: compactVoicing(ii.leftHand), duration: 'h' },
+        { treble: compactVoicing(v.rightHand), bass: compactVoicing(v.leftHand), duration: 'h' },
       ],
       [
-        { treble: i.rightHand, bass: i.leftHand, duration: 'w' },
+        { treble: compactVoicing(i.rightHand), bass: compactVoicing(i.leftHand), duration: 'w' },
       ],
     ];
   }, [progression]);
@@ -61,7 +78,7 @@ export default function ProgressionDisplay({
   const keyboardData = useMemo(() => {
     if (selectedChordIdx === null) return null;
     const voicing = progression.chords[selectedChordIdx];
-    const allNotes = [...voicing.leftHand, ...voicing.rightHand];
+    const allNotes = [...compactVoicing(voicing.leftHand), ...compactVoicing(voicing.rightHand)];
     const highlights: NoteHighlight[] = allNotes.map(p => ({
       note: p.name,
       octave: p.octave,
@@ -78,7 +95,7 @@ export default function ProgressionDisplay({
   }, [selectedChordIdx, progression]);
 
   return (
-    <div className={`rounded-xl border p-3 ${
+    <div ref={cardRef} className={`rounded-xl border p-3 ${
       isCurrent ? 'border-blue-300 bg-blue-50' : 'border-gray-200 bg-white'
     }`}>
       <div className="flex items-center gap-2 mb-2">
@@ -93,15 +110,17 @@ export default function ProgressionDisplay({
       </div>
 
       {/* Grand staff notation - 2 measures with key signature + chord labels */}
-      <GrandStaff
-        measures={measures}
-        keySignature={progression.key}
-        measureLabels={measureLabels}
-        onLabelClick={handleLabelClick}
-        staveWidth={380}
-        height={200}
-        activeMeasureIdx={staffMeasureIdx}
-      />
+      {containerWidth > 0 && (
+        <GrandStaff
+          measures={measures}
+          keySignature={progression.key}
+          measureLabels={measureLabels}
+          onLabelClick={handleLabelClick}
+          staveWidth={dynamicStaveWidth}
+          height={200}
+          activeMeasureIdx={staffMeasureIdx}
+        />
+      )}
 
       {/* Piano keyboard for selected chord */}
       {keyboardData && (
@@ -121,6 +140,7 @@ export default function ProgressionDisplay({
             startOctave={keyboardData.startOctave}
             octaves={keyboardData.octaves}
             highlightedNotes={keyboardData.highlights}
+            width={containerWidth > 0 ? containerWidth - 24 : undefined}
           />
         </div>
       )}
