@@ -1,0 +1,67 @@
+# Piano Steps - Jazz Piano Practice Web App
+
+## Tech Stack
+- React 19 + TypeScript + Vite 7
+- Tailwind CSS v4 (via `@tailwindcss/vite` plugin)
+- VexFlow 5 (music notation rendering, SVG)
+- Tone.js (audio engine, metronome, playback scheduling)
+- Zustand 5 (state management, per-module stores)
+- React Router v7
+
+## Commands
+- `npm run dev` - Start dev server (port 5173, host 127.0.0.1)
+- `npm run build` - TypeScript check + production build
+- `npm run preview` - Preview production build
+
+## Project Structure
+```
+src/
+  app/                    - Router, Layout, HomePage
+  components/
+    metronome/            - MetronomeWidget, BeatIndicator
+    notation/             - StaffRenderer (single clef), GrandStaff (treble+bass)
+    piano/                - PianoKeyboard (SVG 2-octave)
+    playback/             - PlaybackControls (DAW-style transport)
+  features/
+    metronome/            - MetronomePage, metronomeStore (global)
+    chords/               - ChordCheatSheet, ChordCard, chordStore
+    two-five-one/         - TwoFiveOnePage, ProgressionDisplay, twoFiveOneStore, usePracticePlayback
+    jazz-hanon/           - JazzHanonPage, jazzHanonStore
+  data/
+    chords.ts             - 12 keys × 9 chord qualities, ALL_ROOTS, ALL_QUALITIES
+    voicings.ts           - Not yet created (voicing logic is in voicingEngine)
+    progressions.ts       - II-V-I A/B form voicings (C key base + transposition)
+    exercises.ts          - Jazz Hanon 6 patterns (C key base + transposition)
+  lib/
+    music/
+      noteUtils.ts        - Note/MIDI conversion, transposition, pitch helpers
+      chordBuilder.ts     - Chord intervals, tension rules, chord construction
+      voicingEngine.ts    - Basic + Drop 2 voicing builders
+    audio/
+      metronomeEngine.ts  - Tone.js Transport + Loop singleton
+  types/
+    music.ts              - NoteName, Pitch, ChordQuality, ChordVoicing, Progression
+    metronome.ts          - TimeSignature, ClickSound, MetronomeConfig
+    playback.ts           - PlaybackStatus, PlaybackState
+```
+
+## Key Conventions
+- Pitch type: `{ name: NoteName, octave: number, midi: number }` - all music data uses this
+- Jazz enharmonic spelling: always prefer flats (Bb not A#, Eb not D#)
+- VexFlow notation: `StaffRenderer` for single clef, `GrandStaff` for treble+bass with brace
+- Piano keyboard: custom SVG component (`PianoKeyboard`) with note highlighting
+- Each feature module has its own Zustand store; metronome store is global (shared)
+- Voicing data: C key manually transcribed from lesson images, other keys via transposition
+- Responsive layout: desktop = left sidebar (md: breakpoint), mobile = bottom tab bar
+
+## Modules
+1. **Metronome** - BPM 40-200, time signatures (4/4, 3/4, 6/8, 2/4, 5/4, 7/8), accent, visual beat indicator. Standalone page + embeddable widget.
+2. **Chord Cheat Sheet** - 108 chords (12×9), search/filter, staff notation + keyboard, basic↔Drop 2 voicing toggle. Color-coded degree labels.
+3. **II-V-I Practice** - Chromatic descending or random mode, 8 progressions per session, A form (Open/Drop 2) / B form (Close), current+next progression display, DAW playback controls.
+4. **Jazz Hanon** - 6 patterns of chord tone arpeggios through 7 diatonic chords (I-VII), key transposition, staff notation, playback controls.
+
+## Reference Materials
+- `docs/2026-03-07_보이싱수업정리.md` - Lesson notes (voicing theory, II-V-I, Drop 2, tensions)
+- `docs/2-5-1 voicing 1~3.jpeg` - A form (Open) + B form (Close) voicings for 12 keys
+- `docs/7th chord cheatsheet 1~3.jpeg` - 7th chord reference for 12 keys × 10 types
+- `docs/jazz trill.jpeg` - Jazz Hanon exercise patterns (6 patterns, C key diatonic)
