@@ -27,6 +27,7 @@ src/
     chords/               - ChordCheatSheet, ChordCard, chordStore
     two-five-one/         - TwoFiveOnePage, ProgressionDisplay, twoFiveOneStore, usePracticePlayback
     jazz-hanon/           - JazzHanonPage, jazzHanonStore, PatternBuilder, customPatternStorage, useHanonPlayback
+    chord-detect/         - ChordDetectPage, chordDetectStore, useChordDetection (mic + Web Audio)
   data/
     chords.ts             - 12 keys × 9 chord qualities, ALL_ROOTS, ALL_QUALITIES
     voicings.ts           - Not yet created (voicing logic is in voicingEngine)
@@ -39,6 +40,7 @@ src/
       voicingEngine.ts    - Basic + Drop 2 voicing builders
     audio/
       metronomeEngine.ts  - Tone.js Transport + Loop singleton
+      chordAnalyser.ts    - FFT→chroma vector→chord template matching (pure functions, no Web Audio dependency)
   types/
     music.ts              - NoteName, Pitch, ChordQuality, ChordVoicing, Progression
     metronome.ts          - TimeSignature, ClickSound, MetronomeConfig
@@ -60,6 +62,7 @@ src/
 2. **Chord Cheat Sheet** - 108 chords (12×9), search/filter, staff notation + keyboard, basic↔Drop 2 voicing toggle. Color-coded degree labels.
 3. **II-V-I Practice** - Whole-tone descending (C→Bb→Ab→Gb→E→D→F→Eb→Db→B→A→G) or random mode, 12 keys per session, A form (Open/Drop 2) / B form (Close), current+next progression display, chord label click → piano keyboard, DAW playback controls. Auto compact voicing for wide intervals.
 4. **Jazz Hanon** - 6 built-in + custom patterns (PatternBuilder, localStorage CRUD), chord tone arpeggios through 7 diatonic chords (I-VII), key transposition, responsive staff notation, playback controls.
+5. **Chord Detector** - Microphone input → real-time chord recognition via Web Audio API (FFT → chroma vector → cosine similarity template matching). 9 chord qualities (7th) × 12 roots = 108 templates. Stabilized detection (3 consecutive frames ~360ms required). 30-second silence auto-stop. Detected chord history with save/delete UI.
 
 ## Reference Materials
 - `docs/2026-03-07_보이싱수업정리.md` - Lesson notes (voicing theory, II-V-I, Drop 2, tensions)

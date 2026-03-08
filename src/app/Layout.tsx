@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 
 const navItems = [
-  { to: '/', label: 'Home' },
-  { to: '/metronome', label: 'Metronome' },
-  { to: '/chords', label: 'Chords' },
-  { to: '/two-five-one', label: 'II-V-I' },
-  { to: '/jazz-hanon', label: 'Hanon' },
+  { to: '/', label: 'Home', emoji: '🏠' },
+  { to: '/metronome', label: 'Metronome', emoji: '🥁' },
+  { to: '/chords', label: 'Chords', emoji: '🎹' },
+  { to: '/two-five-one', label: 'II-V-I', emoji: '🎵' },
+  { to: '/jazz-hanon', label: 'Hanon', emoji: '🎼' },
+  { to: '/chord-detect', label: 'Detect', emoji: '🎤' },
 ];
 
 /** Hamburger menu icon */
@@ -52,6 +53,7 @@ export default function Layout() {
               }`
             }
           >
+            <span>{item.emoji}</span>
             {item.label}
           </NavLink>
         ))}
@@ -94,7 +96,7 @@ export default function Layout() {
                 }`}
                 style={{ transitionDelay: menuOpen ? `${idx * 30}ms` : '0ms' }}
               >
-                {item.label}
+                {item.emoji} {item.label}
               </NavLink>
             );
           })}

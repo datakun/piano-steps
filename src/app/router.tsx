@@ -5,6 +5,7 @@ import MetronomePage from '../features/metronome/MetronomePage';
 import ChordCheatSheet from '../features/chords/ChordCheatSheet';
 import TwoFiveOnePage from '../features/two-five-one/TwoFiveOnePage';
 import JazzHanonPage from '../features/jazz-hanon/JazzHanonPage';
+import ChordDetectPage from '../features/chord-detect/ChordDetectPage';
 
 export const router = createBrowserRouter([
   {
@@ -16,6 +17,7 @@ export const router = createBrowserRouter([
       { path: 'chords', element: <ChordCheatSheet /> },
       { path: 'two-five-one', element: <TwoFiveOnePage /> },
       { path: 'jazz-hanon', element: <JazzHanonPage /> },
+      { path: 'chord-detect', element: <ChordDetectPage /> },
     ],
   },
 ]);
