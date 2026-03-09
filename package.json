@@ -10,7 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@spotify/basic-pitch": "^1.0.1",
     "@tailwindcss/vite": "^4.2.1",
+    "midi-writer-js": "^3.2.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.13.1",

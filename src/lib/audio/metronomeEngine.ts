@@ -5,8 +5,8 @@ export type MetronomeTickCallback = (beat: number, time: number) => void;
 /** Convert 0–100 percentage to dB for the accent (high) click. */
 export function volumeToDb(percent: number): number {
   if (percent <= 0) return -Infinity;
-  // 0% = -∞, 80% ≈ -6 dB (legacy default), 100% = 0 dB
-  return -30 + (percent / 100) * 30;
+  // 0% = -∞, 80% ≈ 0 dB, 100% = +6 dB
+  return -30 + (percent / 100) * 36;
 }
 
 /** Accent click is 4 dB louder than the regular click. */
@@ -28,15 +28,15 @@ class MetronomeEngine {
 
     if (!this.clickHigh) {
       this.clickHigh = new Tone.Synth({
-        oscillator: { type: 'sine' },
-        envelope: { attack: 0.001, decay: 0.05, sustain: 0, release: 0.05 },
+        oscillator: { type: 'triangle' },
+        envelope: { attack: 0.001, decay: 0.08, sustain: 0, release: 0.05 },
         volume: highDb,
       }).toDestination();
     }
     if (!this.clickLow) {
       this.clickLow = new Tone.Synth({
-        oscillator: { type: 'sine' },
-        envelope: { attack: 0.001, decay: 0.05, sustain: 0, release: 0.05 },
+        oscillator: { type: 'triangle' },
+        envelope: { attack: 0.001, decay: 0.08, sustain: 0, release: 0.05 },
         volume: lowDb,
       }).toDestination();
     }

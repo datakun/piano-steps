@@ -25,6 +25,24 @@ const modules = [
     description: '코드 구성음 아르페지오 패턴 연습',
     icon: '🎼',
   },
+  {
+    to: '/chord-detect',
+    title: 'Chord Detector',
+    description: '마이크로 코드 실시간 인식',
+    icon: '🎤',
+  },
+  {
+    to: '/chord-sense',
+    title: 'Chord Sense',
+    description: '향상된 코드 인식 (Guitar/Piano 모드)',
+    icon: '🎧',
+  },
+  {
+    to: '/humming',
+    title: 'Humming',
+    description: '허밍으로 멜로디 → MIDI 변환',
+    icon: '🎙️',
+  },
 ];
 
 export default function HomePage() {

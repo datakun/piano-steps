@@ -8,6 +8,8 @@ const navItems = [
   { to: '/two-five-one', label: 'II-V-I', emoji: '🎵' },
   { to: '/jazz-hanon', label: 'Hanon', emoji: '🎼' },
   { to: '/chord-detect', label: 'Detect', emoji: '🎤' },
+  { to: '/chord-sense', label: 'Sense', emoji: '🎧' },
+  { to: '/humming', label: 'Humming', emoji: '🎙️' },
 ];
 
 /** Hamburger menu icon */
