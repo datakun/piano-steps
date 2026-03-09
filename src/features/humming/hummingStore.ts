@@ -6,7 +6,7 @@ import type { ModelStatus } from '../../lib/audio/basicPitchTranscriber';
 // State
 // ---------------------------------------------------------------------------
 
-export type RecordingStatus = 'idle' | 'recording' | 'processing' | 'done' | 'error';
+export type RecordingStatus = 'idle' | 'count-in' | 'recording' | 'processing' | 'done' | 'error';
 
 interface HummingState {
   /** Tempo for quantization */
@@ -28,6 +28,10 @@ interface HummingState {
   processingPhase: string;
   /** Transcription error message */
   transcriptionError: string | null;
+  /** Current count-in beat (0-based, -1 = not counting) */
+  countInBeat: number;
+  /** Whether count-in is enabled before recording */
+  countInEnabled: boolean;
 
   /** Quantized melody result */
   melodyNotes: MelodyNote[];
@@ -47,6 +51,8 @@ interface HummingState {
   setTranscriptionProgress: (pct: number) => void;
   setProcessingPhase: (phase: string) => void;
   setTranscriptionError: (error: string) => void;
+  setCountInBeat: (beat: number) => void;
+  setCountInEnabled: (enabled: boolean) => void;
   setAudioBlob: (blob: Blob | null) => void;
   setResult: (raw: MelodyNote[], quantized: MelodyNote[], timeMs: number) => void;
   reset: () => void;
@@ -68,6 +74,8 @@ export const useHummingStore = create<HummingState>((set) => ({
   transcriptionProgress: 0,
   processingPhase: '',
   transcriptionError: null,
+  countInBeat: -1,
+  countInEnabled: false,
 
   melodyNotes: [],
   rawNotes: [],
@@ -88,6 +96,9 @@ export const useHummingStore = create<HummingState>((set) => ({
   setTranscriptionError: (transcriptionError) =>
     set({ transcriptionError, recordingStatus: 'error' }),
 
+  setCountInBeat: (countInBeat) => set({ countInBeat }),
+  setCountInEnabled: (countInEnabled) => set({ countInEnabled }),
+
   setAudioBlob: (audioBlob) => set({ audioBlob }),
 
   setResult: (rawNotes, melodyNotes, processingTimeMs) =>
@@ -100,6 +111,7 @@ export const useHummingStore = create<HummingState>((set) => ({
       transcriptionProgress: 0,
       processingPhase: '',
       transcriptionError: null,
+      countInBeat: -1,
       melodyNotes: [],
       rawNotes: [],
       processingTimeMs: null,

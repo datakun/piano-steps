@@ -35,9 +35,9 @@ export default function HummingPage() {
     bpm, subdivision,
     modelStatus, modelError,
     recordingStatus, recordingDuration, transcriptionProgress,
-    processingPhase, transcriptionError,
+    processingPhase, transcriptionError, countInBeat, countInEnabled,
     melodyNotes, rawNotes, processingTimeMs,
-    setBpm, setSubdivision, reset,
+    setBpm, setSubdivision, setCountInEnabled, reset,
   } = useHummingStore();
 
   const { startRecording, stopRecording, loadModel, analyserRef } = useHummingRecording();
@@ -93,6 +93,7 @@ export default function HummingPage() {
     return () => cancelAnimationFrame(rafRef.current);
   }, [recordingStatus, analyserRef]);
 
+  const isCountIn = recordingStatus === 'count-in';
   const isRecording = recordingStatus === 'recording';
   const isProcessing = recordingStatus === 'processing';
   const isDone = recordingStatus === 'done';
@@ -106,7 +107,7 @@ export default function HummingPage() {
   const handleRecordToggle = () => {
     if (isRecording) {
       stopRecording();
-    } else {
+    } else if (!isCountIn) {
       startRecording();
     }
   };
@@ -200,6 +201,19 @@ export default function HummingPage() {
           >
             TAP{tapCount >= 2 ? '' : ''}
           </button>
+
+          {/* Count-in toggle */}
+          <button
+            onClick={() => setCountInEnabled(!countInEnabled)}
+            disabled={isRecording || isProcessing || isCountIn}
+            className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors disabled:opacity-40 ${
+              countInEnabled
+                ? 'bg-blue-50 border-blue-200 text-blue-700'
+                : 'border-gray-200 text-gray-400 hover:bg-gray-100'
+            }`}
+          >
+            Count-in
+          </button>
         </div>
 
         {/* Model status */}
@@ -221,7 +235,7 @@ export default function HummingPage() {
               </button>
             </div>
           )}
-          {modelStatus === 'ready' && !isRecording && !isProcessing && !isDone && (
+          {modelStatus === 'ready' && !isCountIn && !isRecording && !isProcessing && !isDone && (
             <div className="flex items-center gap-2 text-xs text-green-600 bg-green-50 rounded-lg px-3 py-2">
               <span>✅</span>
               Model ready
@@ -231,19 +245,47 @@ export default function HummingPage() {
 
         {/* Recording area */}
         <div className="flex flex-col items-center py-4">
+          {/* Count-in display */}
+          {isCountIn && (
+            <div className="mb-4 flex flex-col items-center gap-2">
+              <div className="flex items-center gap-3">
+                {[0, 1, 2, 3].map((beat) => (
+                  <span
+                    key={beat}
+                    className={`text-3xl font-bold tabular-nums transition-all duration-100 ${
+                      countInBeat === beat
+                        ? 'text-blue-600 scale-125'
+                        : countInBeat > beat
+                          ? 'text-gray-300'
+                          : 'text-gray-300'
+                    }`}
+                  >
+                    {beat + 1}
+                  </span>
+                ))}
+              </div>
+              <span className="text-xs text-gray-400">Count-in…</span>
+            </div>
+          )}
+
           {/* Record button */}
           <button
             onClick={handleRecordToggle}
-            disabled={!modelReady || isProcessing}
+            disabled={!modelReady || isProcessing || isCountIn}
             className={`w-20 h-20 rounded-full flex items-center justify-center transition-all duration-200 ${
               isRecording
                 ? 'bg-red-500 shadow-lg shadow-red-200'
-                : 'bg-red-500 hover:bg-red-600 shadow-md disabled:opacity-40 disabled:shadow-none'
+                : isCountIn
+                  ? 'bg-gray-300 shadow-none cursor-wait'
+                  : 'bg-red-500 hover:bg-red-600 shadow-md disabled:opacity-40 disabled:shadow-none'
             }`}
           >
             {isRecording ? (
               /* Stop icon (square) */
               <div className="w-7 h-7 bg-white rounded-sm" />
+            ) : isCountIn ? (
+              /* Pulse icon during count-in */
+              <div className="w-7 h-7 bg-white rounded-full animate-pulse" />
             ) : (
               /* Record icon (circle) */
               <div className="w-7 h-7 bg-white rounded-full" />

@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { useTwoFiveOneStore } from './twoFiveOneStore';
 import { usePracticePlayback } from './usePracticePlayback';
 import ProgressionDisplay from './ProgressionDisplay';
@@ -34,7 +35,15 @@ export default function TwoFiveOnePage() {
   // Each progression = 4 measures (2 bars × 2 repeats)
   const currentProgIdx = Math.floor(playback.currentMeasure / 4);
   const measureInProg = playback.currentMeasure % 4;
-  const nextProgIdx = Math.min(currentProgIdx + 1, progressions.length - 1);
+
+  // Auto-scroll to current progression during playback
+  const progRefs = useRef<(HTMLDivElement | null)[]>([]);
+  useEffect(() => {
+    const el = progRefs.current[currentProgIdx];
+    if (el && playback.status !== 'stopped') {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [currentProgIdx, playback.status]);
 
   if (!isSessionStarted) {
     return (
@@ -205,45 +214,28 @@ export default function TwoFiveOnePage() {
         >
           B form
         </button>
-        <span className="text-xs text-gray-400 self-center ml-auto">
-          Progression {currentProgIdx + 1} / {progressions.length}
-        </span>
       </div>
 
-      {/* Current progression */}
-      {progressions[currentProgIdx] && (
-        <ProgressionDisplay
-          progression={progressions[currentProgIdx]}
-          label="Current"
-          activeMeasureInProgression={playback.status !== 'stopped' ? measureInProg : undefined}
-          isCurrent
-        />
-      )}
-
-      {/* Next progression (look-ahead) */}
-      {progressions[nextProgIdx] && nextProgIdx !== currentProgIdx && (
-        <div className="mt-3">
-          <ProgressionDisplay
-            progression={progressions[nextProgIdx]}
-            label="Next"
-          />
-        </div>
-      )}
-
-      {/* Progression overview */}
-      <div className="mt-4 flex gap-1.5 flex-wrap">
-        {progressions.map((p, i) => (
-          <button
-            key={i}
+      {/* All progressions */}
+      <div className="space-y-3">
+        {progressions.map((prog, i) => (
+          <div
+            key={`${prog.key}-${i}`}
+            ref={(el) => { progRefs.current[i] = el; }}
             onClick={() => useTwoFiveOneStore.getState().setCurrentMeasure(i * 4)}
-            className={`px-2 py-1 rounded text-xs border ${
-              i === currentProgIdx
-                ? 'bg-blue-100 border-blue-300 text-blue-700'
-                : 'border-gray-200 text-gray-500 hover:bg-gray-50'
-            }`}
+            className="cursor-pointer"
           >
-            {p.key}
-          </button>
+            <ProgressionDisplay
+              progression={prog}
+              label={`${i + 1}. ${prog.key}`}
+              activeMeasureInProgression={
+                i === currentProgIdx && playback.status !== 'stopped'
+                  ? measureInProg
+                  : undefined
+              }
+              isCurrent={i === currentProgIdx}
+            />
+          </div>
         ))}
       </div>
       </div>

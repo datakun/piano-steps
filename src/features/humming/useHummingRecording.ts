@@ -1,4 +1,5 @@
 import { useRef, useCallback, useEffect } from 'react';
+import * as Tone from 'tone';
 import { useHummingStore } from './hummingStore';
 import { basicPitchTranscriber } from '../../lib/audio/basicPitchTranscriber';
 import { toMelodyNotes, quantizeNotes } from '../../lib/audio/melodyExtractor';
@@ -90,13 +91,47 @@ export function useHummingRecording() {
   // -----------------------------------------------------------------------
 
   const startRecording = useCallback(async () => {
-    // Already recording? skip
+    // Already recording or counting in? skip
     if (mediaRecorderRef.current) return;
 
     // Reset previous result
     store.getState().reset();
 
     try {
+      const { bpm, countInEnabled } = store.getState();
+
+      // --- Optional count-in phase ---
+      if (countInEnabled) {
+        await Tone.start();
+        store.getState().setRecordingStatus('count-in');
+        store.getState().setCountInBeat(-1);
+
+        const beatDuration = 60 / bpm;
+
+        const clickSynth = new Tone.Synth({
+          oscillator: { type: 'triangle' },
+          envelope: { attack: 0.001, decay: 0.08, sustain: 0, release: 0.05 },
+          volume: -4,
+        }).toDestination();
+
+        const now = Tone.now() + 0.05;
+        for (let i = 0; i < 4; i++) {
+          const freq = i === 0 ? 1200 : 800;
+          clickSynth.triggerAttackRelease(freq, '32n', now + i * beatDuration);
+          Tone.getDraw().schedule(() => {
+            store.getState().setCountInBeat(i);
+          }, now + i * beatDuration);
+        }
+
+        // Wait for 4 beats to finish
+        await new Promise((r) => setTimeout(r, beatDuration * 4 * 1000));
+        clickSynth.dispose();
+
+        // If user cancelled during count-in (reset was called), bail out
+        if (store.getState().recordingStatus !== 'count-in') return;
+      }
+
+      // --- Actual recording ---
       // iOS audioSession
       try {
         if (navigator.audioSession) {
@@ -179,11 +214,13 @@ export function useHummingRecording() {
 
         if (blob.size === 0) {
           store.getState().setTranscriptionError('No audio data recorded');
+          mediaRecorderRef.current = null;
           return;
         }
 
         // Transcribe
         await transcribe(blob);
+        mediaRecorderRef.current = null; // allow next recording
       };
 
       mediaRecorderRef.current = recorder;
