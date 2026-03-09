@@ -4,13 +4,25 @@ import GrandStaff from '../../components/notation/GrandStaff';
 import type { GrandStaffChord } from '../../components/notation/GrandStaff';
 import PianoKeyboard from '../../components/piano/PianoKeyboard';
 import type { NoteHighlight } from '../../components/piano/PianoKeyboard';
-import { compactVoicing } from '../../lib/music/noteUtils';
+import { compactVoicing, pitch } from '../../lib/music/noteUtils';
+import type { Pitch } from '../../types/music';
+
+/** If the highest bass clef note is G4 (MIDI 67) or above, shift all notes down 1 octave */
+function adjustBassOctave(notes: Pitch[]): Pitch[] {
+  if (notes.length === 0) return notes;
+  const highest = Math.max(...notes.map(n => n.midi));
+  if (highest >= 67) { // G4
+    return notes.map(n => pitch(n.name, n.octave - 1));
+  }
+  return notes;
+}
 
 interface ProgressionDisplayProps {
   progression: Progression;
   label: string;
   activeMeasureInProgression?: number; // 0-3 within the 4-bar block
   isCurrent?: boolean;
+  activeChordIndex?: number; // 0=II, 1=V, 2=I — guide mode auto-select
 }
 
 export default function ProgressionDisplay({
@@ -18,6 +30,7 @@ export default function ProgressionDisplay({
   label,
   activeMeasureInProgression,
   isCurrent = false,
+  activeChordIndex,
 }: ProgressionDisplayProps) {
   const [selectedChordIdx, setSelectedChordIdx] = useState<number | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -34,6 +47,15 @@ export default function ProgressionDisplay({
     return () => ro.disconnect();
   }, []);
 
+  // Guide mode: auto-select chord when activeChordIndex changes
+  useEffect(() => {
+    if (activeChordIndex !== undefined) {
+      setSelectedChordIdx(activeChordIndex);
+    } else {
+      setSelectedChordIdx(null);
+    }
+  }, [activeChordIndex]);
+
   // Dynamic stave width: container padding (p-3 = 12px × 2) + SVG internal padding (10px × 2)
   const dynamicStaveWidth = Math.max(200, containerWidth - 24 - 20);
 
@@ -44,11 +66,11 @@ export default function ProgressionDisplay({
     const [ii, v, i] = progression.chords;
     return [
       [
-        { treble: compactVoicing(ii.rightHand), bass: compactVoicing(ii.leftHand), duration: 'h' },
-        { treble: compactVoicing(v.rightHand), bass: compactVoicing(v.leftHand), duration: 'h' },
+        { treble: compactVoicing(ii.rightHand), bass: adjustBassOctave(compactVoicing(ii.leftHand)), duration: 'h' },
+        { treble: compactVoicing(v.rightHand), bass: adjustBassOctave(compactVoicing(v.leftHand)), duration: 'h' },
       ],
       [
-        { treble: compactVoicing(i.rightHand), bass: compactVoicing(i.leftHand), duration: 'w' },
+        { treble: compactVoicing(i.rightHand), bass: adjustBassOctave(compactVoicing(i.leftHand)), duration: 'w' },
       ],
     ];
   }, [progression]);
@@ -78,7 +100,7 @@ export default function ProgressionDisplay({
   const keyboardData = useMemo(() => {
     if (selectedChordIdx === null) return null;
     const voicing = progression.chords[selectedChordIdx];
-    const allNotes = [...compactVoicing(voicing.leftHand), ...compactVoicing(voicing.rightHand)];
+    const allNotes = [...adjustBassOctave(compactVoicing(voicing.leftHand)), ...compactVoicing(voicing.rightHand)];
     const highlights: NoteHighlight[] = allNotes.map(p => ({
       note: p.name,
       octave: p.octave,

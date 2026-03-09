@@ -9,6 +9,7 @@ interface TwoFiveOneState {
   mode: PracticeMode;
   form: 'A' | 'B';
   startKey: NoteName;
+  guideMode: boolean;
   progressions: Progression[];
   playback: PlaybackState;
   isSessionStarted: boolean;
@@ -17,6 +18,7 @@ interface TwoFiveOneState {
   setMode: (mode: PracticeMode) => void;
   setForm: (form: 'A' | 'B') => void;
   setStartKey: (key: NoteName) => void;
+  setGuideMode: (enabled: boolean) => void;
   startSession: () => void;
   resetSession: () => void;
 
@@ -35,6 +37,7 @@ export const useTwoFiveOneStore = create<TwoFiveOneState>((set, get) => ({
   mode: 'chromatic',
   form: 'A',
   startKey: 'C',
+  guideMode: false,
   progressions: [],
   isSessionStarted: false,
   playback: {
@@ -61,6 +64,7 @@ export const useTwoFiveOneStore = create<TwoFiveOneState>((set, get) => ({
     }
   },
   setStartKey: (key) => set({ startKey: key }),
+  setGuideMode: (enabled) => set({ guideMode: enabled }),
 
   startSession: () => {
     const { mode, form, startKey } = get();

@@ -18,8 +18,8 @@ export default function TwoFiveOnePage() {
   useModuleMetronome('two-five-one');
 
   const {
-    mode, form, startKey, progressions, playback, isSessionStarted,
-    setMode, setForm, setStartKey, startSession, resetSession,
+    mode, form, startKey, guideMode, progressions, playback, isSessionStarted,
+    setMode, setForm, setStartKey, setGuideMode, startSession, resetSession,
     toggleRepeat, nextMeasure, prevMeasure,
   } = useTwoFiveOneStore();
 
@@ -35,6 +35,17 @@ export default function TwoFiveOnePage() {
   // Each progression = 4 measures (2 bars × 2 repeats)
   const currentProgIdx = Math.floor(playback.currentMeasure / 4);
   const measureInProg = playback.currentMeasure % 4;
+
+  // Calculate active chord index for guide mode (0=II, 1=V, 2=I)
+  const activeChordIdx = (() => {
+    if (!guideMode || playback.status === 'stopped') return undefined;
+    const staffMeasureIdx = measureInProg % 2; // 0=II-V bar, 1=I bar
+    if (staffMeasureIdx === 1) return 2; // I chord
+    // II-V bar: split by half of beats
+    const beatsPerMeasure = BEATS_MAP[timeSignature] ?? 4;
+    const half = Math.floor(beatsPerMeasure / 2);
+    return playback.currentBeat < half ? 0 : 1; // II or V
+  })();
 
   // Auto-scroll to current progression during playback
   const progRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -122,6 +133,20 @@ export default function TwoFiveOnePage() {
                 </select>
               </div>
             )}
+
+            <div>
+              <label className="text-sm text-gray-500 block mb-1">Guide Mode</label>
+              <button
+                onClick={() => setGuideMode(!guideMode)}
+                className={`w-full py-2 rounded-lg text-sm border transition-colors ${
+                  guideMode
+                    ? 'bg-blue-50 border-blue-200 text-blue-700'
+                    : 'border-gray-200 text-gray-500'
+                }`}
+              >
+                {guideMode ? 'ON — 재생 중 운지 자동 표시' : 'OFF'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -234,6 +259,11 @@ export default function TwoFiveOnePage() {
                   : undefined
               }
               isCurrent={i === currentProgIdx}
+              activeChordIndex={
+                i === currentProgIdx && playback.status !== 'stopped'
+                  ? activeChordIdx
+                  : undefined
+              }
             />
           </div>
         ))}

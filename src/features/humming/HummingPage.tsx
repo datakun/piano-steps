@@ -148,9 +148,9 @@ export default function HummingPage() {
       </div>
 
       <div className="px-4 md:px-6 pb-6">
-        {/* Settings */}
-        <div className="flex items-center gap-4 mb-6">
-          {/* BPM */}
+        {/* Settings — 2 rows */}
+        <div className="grid grid-cols-2 gap-2 mb-6">
+          {/* Row 1 Left: BPM */}
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-500 font-medium">BPM</span>
             <div className="flex items-center gap-1">
@@ -174,7 +174,22 @@ export default function HummingPage() {
             </div>
           </div>
 
-          {/* Subdivision */}
+          {/* Row 1 Right: Tap Tempo */}
+          <div className="flex justify-end">
+            <button
+              onClick={handleTap}
+              disabled={isRecording || isProcessing}
+              className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-all duration-100 disabled:opacity-40 ${
+                tapFlash
+                  ? 'bg-blue-100 border-blue-300 text-blue-700'
+                  : 'border-gray-200 text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              TAP{tapCount >= 2 ? '' : ''}
+            </button>
+          </div>
+
+          {/* Row 2 Left: Subdivision */}
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-500 font-medium">Grid</span>
             <select
@@ -189,31 +204,20 @@ export default function HummingPage() {
             </select>
           </div>
 
-          {/* Tap Tempo */}
-          <button
-            onClick={handleTap}
-            disabled={isRecording || isProcessing}
-            className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-all duration-100 disabled:opacity-40 ${
-              tapFlash
-                ? 'bg-blue-100 border-blue-300 text-blue-700'
-                : 'border-gray-200 text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            TAP{tapCount >= 2 ? '' : ''}
-          </button>
-
-          {/* Count-in toggle */}
-          <button
-            onClick={() => setCountInEnabled(!countInEnabled)}
-            disabled={isRecording || isProcessing || isCountIn}
-            className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors disabled:opacity-40 ${
-              countInEnabled
-                ? 'bg-blue-50 border-blue-200 text-blue-700'
-                : 'border-gray-200 text-gray-400 hover:bg-gray-100'
-            }`}
-          >
-            Count-in
-          </button>
+          {/* Row 2 Right: Count-in toggle */}
+          <div className="flex justify-end">
+            <button
+              onClick={() => setCountInEnabled(!countInEnabled)}
+              disabled={isRecording || isProcessing || isCountIn}
+              className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors disabled:opacity-40 ${
+                countInEnabled
+                  ? 'bg-blue-50 border-blue-200 text-blue-700'
+                  : 'border-gray-200 text-gray-400 hover:bg-gray-100'
+              }`}
+            >
+              Count-in
+            </button>
+          </div>
         </div>
 
         {/* Model status */}
