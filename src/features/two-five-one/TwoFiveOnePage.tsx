@@ -36,9 +36,9 @@ export default function TwoFiveOnePage() {
   const currentProgIdx = Math.floor(playback.currentMeasure / 4);
   const measureInProg = playback.currentMeasure % 4;
 
-  // Calculate active chord index for guide mode (0=II, 1=V, 2=I)
+  // Calculate active chord index (0=II, 1=V, 2=I) — during playback
   const activeChordIdx = (() => {
-    if (!guideMode || playback.status === 'stopped') return undefined;
+    if (playback.status === 'stopped') return undefined;
     const staffMeasureIdx = measureInProg % 2; // 0=II-V bar, 1=I bar
     if (staffMeasureIdx === 1) return 2; // I chord
     // II-V bar: split by half of beats

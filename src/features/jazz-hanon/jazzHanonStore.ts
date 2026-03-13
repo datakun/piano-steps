@@ -5,11 +5,13 @@ import type { PlaybackState } from '../../types/playback';
 interface JazzHanonState {
   selectedExercise: number | string; // number for built-in, string for custom
   selectedKey: NoteName;
+  guideMode: boolean;
   playback: PlaybackState;
   isSessionStarted: boolean;
 
   setExercise: (id: number | string) => void;
   setKey: (key: NoteName) => void;
+  setGuideMode: (enabled: boolean) => void;
   startSession: () => void;
   resetSession: () => void;
 
@@ -26,6 +28,7 @@ interface JazzHanonState {
 export const useJazzHanonStore = create<JazzHanonState>((set, _get) => ({
   selectedExercise: 1,
   selectedKey: 'C',
+  guideMode: false,
   playback: {
     status: 'stopped',
     currentMeasure: 0,
@@ -37,6 +40,7 @@ export const useJazzHanonStore = create<JazzHanonState>((set, _get) => ({
 
   setExercise: (id) => set({ selectedExercise: id }),
   setKey: (key) => set({ selectedKey: key }),
+  setGuideMode: (enabled) => set({ guideMode: enabled }),
 
   startSession: () => set({
     isSessionStarted: true,

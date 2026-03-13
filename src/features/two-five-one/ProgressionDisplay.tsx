@@ -140,7 +140,8 @@ export default function ProgressionDisplay({
           onLabelClick={handleLabelClick}
           staveWidth={dynamicStaveWidth}
           height={200}
-          activeMeasureIdx={staffMeasureIdx}
+          activeChordIndex={activeChordIndex}
+          activeMeasureIdx={activeChordIndex === undefined ? staffMeasureIdx : undefined}
         />
       )}
 

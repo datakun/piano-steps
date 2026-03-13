@@ -1,10 +1,12 @@
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useRef, useEffect } from 'react';
 import { useJazzHanonStore } from './jazzHanonStore';
 import { useHanonPlayback } from './useHanonPlayback';
 import { EXERCISES, DIATONIC_CHORD_LABELS, DEGREE_LABELS, degreesToPatterns, transposeExercise, getDiatonicBassChords } from '../../data/exercises';
 import type { ExercisePattern } from '../../data/exercises';
 import { ALL_ROOTS } from '../../data/chords';
 import HanonGrandStaff from '../../components/notation/HanonGrandStaff';
+import PianoKeyboard from '../../components/piano/PianoKeyboard';
+import type { NoteHighlight } from '../../components/piano/PianoKeyboard';
 import { noteToSemitone, transposePitch } from '../../lib/music/noteUtils';
 import PlaybackControls from '../../components/playback/PlaybackControls';
 import MetronomeWidget from '../../components/metronome/MetronomeWidget';
@@ -18,12 +20,10 @@ export default function JazzHanonPage() {
   useModuleMetronome('jazz-hanon');
 
   const {
-    selectedExercise, selectedKey, playback, isSessionStarted,
-    setExercise, setKey, startSession, resetSession,
+    selectedExercise, selectedKey, guideMode, playback, isSessionStarted,
+    setExercise, setKey, setGuideMode, startSession, resetSession,
     toggleRepeat, nextMeasure, prevMeasure,
   } = useJazzHanonStore();
-
-  const { startPlayback, pausePlayback, stopPlayback } = useHanonPlayback();
 
   const [showFingerings, setShowFingerings] = useState(true);
   const [showBuilder, setShowBuilder] = useState(false);
@@ -65,6 +65,47 @@ export default function JazzHanonPage() {
       chord.map(p => transposePitch(p, semitones, true))
     );
   }, [selectedKey]);
+
+  const { startPlayback, pausePlayback, stopPlayback } = useHanonPlayback(exercise.patterns, bassChords);
+
+  // Degree labels for notation (always visible)
+  const degreeLabels = useMemo(() => {
+    if (!exercise.degrees) return undefined;
+    return exercise.degrees.map(d => DEGREE_LABELS[d]);
+  }, [exercise.degrees]);
+
+  // Piano keyboard data for guide mode
+  const staffContainerRef = useRef<HTMLDivElement>(null);
+  const [staffWidth, setStaffWidth] = useState(0);
+  useEffect(() => {
+    if (!staffContainerRef.current) return;
+    const ro = new ResizeObserver(entries => {
+      setStaffWidth(entries[0]?.contentRect.width ?? 0);
+    });
+    ro.observe(staffContainerRef.current);
+    return () => ro.disconnect();
+  }, []);
+
+  const keyboardData = useMemo(() => {
+    if (!guideMode) return null;
+    const currentPattern = exercise.patterns[playback.currentMeasure] ?? exercise.patterns[0];
+    const activeIdx = playback.status === 'playing' ? playback.currentBeat : undefined;
+    const activeNote = activeIdx !== undefined ? currentPattern[activeIdx] : undefined;
+
+    const highlights: NoteHighlight[] = currentPattern.map(p => ({
+      note: p.name,
+      octave: p.octave,
+      color: activeNote && p.midi === activeNote.midi ? '#2563eb' : '#93c5fd',
+    }));
+
+    const minOct = Math.min(...currentPattern.map(p => p.octave));
+    const maxOct = Math.max(...currentPattern.map(p => p.octave));
+    return {
+      highlights,
+      startOctave: minOct,
+      octaves: Math.max(2, maxOct - minOct + 1),
+    };
+  }, [guideMode, exercise.patterns, playback.currentMeasure, playback.currentBeat, playback.status]);
 
   const handleSavePattern = useCallback((pattern: StoredPattern) => {
     if (editingPattern) {
@@ -135,6 +176,23 @@ export default function JazzHanonPage() {
                 Start
               </button>
             </div>
+          </div>
+        </div>
+
+        {/* Settings */}
+        <div className="px-4 md:px-6 pb-3">
+          <div className="bg-white border border-gray-200 rounded-xl p-4">
+            <label className="text-sm text-gray-500 block mb-1">Guide Mode</label>
+            <button
+              onClick={() => setGuideMode(!guideMode)}
+              className={`w-full py-2 rounded-lg text-sm border transition-colors ${
+                guideMode
+                  ? 'bg-blue-50 border-blue-200 text-blue-700'
+                  : 'border-gray-200 text-gray-500'
+              }`}
+            >
+              {guideMode ? 'ON' : 'OFF'}
+            </button>
           </div>
         </div>
 
@@ -315,14 +373,27 @@ export default function JazzHanonPage() {
         </div>
 
         {/* Staff notation — grand staff with treble arpeggio + bass 7th chord */}
-        <div className="bg-white border border-gray-200 rounded-xl p-3">
+        <div ref={staffContainerRef} className="bg-white border border-gray-200 rounded-xl p-3">
           <HanonGrandStaff
             trebleNotes={exercise.patterns[playback.currentMeasure] ?? exercise.patterns[0]}
             bassChord={bassChords[playback.currentMeasure] ?? bassChords[0]}
             keySignature={selectedKey}
             activeNoteIndex={playback.status === 'playing' ? playback.currentBeat : undefined}
             fingeringLabels={showFingerings && exercise.fingerings.length > 0 ? exercise.fingerings : undefined}
+            degreeLabels={degreeLabels}
           />
+
+          {/* Piano keyboard guide */}
+          {guideMode && keyboardData && (
+            <div className="mt-2 pt-2 border-t border-gray-100">
+              <PianoKeyboard
+                startOctave={keyboardData.startOctave}
+                octaves={keyboardData.octaves}
+                highlightedNotes={keyboardData.highlights}
+                width={staffWidth > 0 ? staffWidth - 24 : undefined}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

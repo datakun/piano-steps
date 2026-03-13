@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { type ChordDegree, DEGREE_LABELS, degreesToPatterns, getDiatonicBassChords } from '../../data/exercises';
+import { type ChordDegree, DEGREE_LABELS, degreesToPatterns, getDiatonicBassChords, autoFingering } from '../../data/exercises';
 import type { StoredPattern } from './customPatternStorage';
 import { generatePatternId } from './customPatternStorage';
 import HanonGrandStaff from '../../components/notation/HanonGrandStaff';
@@ -73,10 +73,12 @@ export default function PatternBuilder({ onSave, onCancel, editingPattern }: Pro
     const degrees = slots as ChordDegree[];
     const patterns = degreesToPatterns(degrees);
     const bassChords = getDiatonicBassChords();
-    const fingeringLabels = degrees.map(d => DEGREE_LABELS[d]);
+    const degreeLabels = degrees.map(d => DEGREE_LABELS[d]);
+    const fingeringLabels = autoFingering(patterns[0]);
     return {
       trebleNotes: patterns[0],
       bassChord: bassChords[0],
+      degreeLabels,
       fingeringLabels,
     };
   }, [slots, isFull]);
@@ -229,6 +231,7 @@ export default function PatternBuilder({ onSave, onCancel, editingPattern }: Pro
               <HanonGrandStaff
                 trebleNotes={previewData.trebleNotes}
                 bassChord={previewData.bassChord}
+                degreeLabels={previewData.degreeLabels}
                 fingeringLabels={previewData.fingeringLabels}
               />
             </div>

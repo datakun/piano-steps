@@ -29,9 +29,9 @@ export interface ExercisePattern {
 export type ChordDegree = 1 | 3 | 5 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14;
 
 export const DEGREE_LABELS: Record<ChordDegree, string> = {
-  1: '1', 3: '3', 5: '5', 7: '7',
-  9: '9', 11: '11', 13: '13',
-  8: '8', 10: "3'", 12: "5'", 14: "7'",
+  1: 'I', 3: 'III', 5: 'V', 7: 'VII',
+  9: 'IX', 11: 'XI', 13: 'XIII',
+  8: "I'", 10: "III'", 12: "V'", 14: "VII'",
 };
 
 const DEGREE_MAP: Record<ChordDegree, { toneIndex: number; octaveOffset: number }> = {
@@ -195,15 +195,75 @@ function pattern6(): Pitch[][] {
 }
 
 export const EXERCISES: ExercisePattern[] = [
-  { id: 1, name: 'Pattern 1', description: 'Ascending & descending (1-3-5-7-8-7-5-3)', patterns: pattern1(), fingerings: ['1','2','3','4','5','4','3','2'] },
-  { id: 2, name: 'Pattern 2', description: 'Descending & ascending (8-7-5-3-1-3-5-7)', patterns: pattern2(), fingerings: ['5','4','3','2','1','2','3','5'] },
-  { id: 3, name: 'Pattern 3', description: 'Zigzag ascending (1-3-3-5-5-7-7-8)', patterns: pattern3(), fingerings: ['1','2','2','3','3','4','4','5'] },
-  { id: 4, name: 'Pattern 4', description: 'Skip intervals (1-5-3-7-5-8-7-3)', patterns: pattern4(), fingerings: ['1','3','2','4','3','5','4','2'] },
-  { id: 5, name: 'Pattern 5', description: 'Two octave ascending (1-3-5-7-1-3-5-7)', patterns: pattern5(), fingerings: ['1','2','3','4','1','2','3','5'] },
-  { id: 6, name: 'Pattern 6', description: 'Two octave descending (7-5-3-1-7-5-3-1)', patterns: pattern6(), fingerings: ['5','3','2','1','5','3','2','1'] },
+  { id: 1, name: 'Pattern 1', description: 'Ascending & descending (1-3-5-7-8-7-5-3)', patterns: pattern1(), fingerings: ['1','2','3','4','5','4','3','2'], degrees: [1, 3, 5, 7, 8, 7, 5, 3] },
+  { id: 2, name: 'Pattern 2', description: 'Descending & ascending (8-7-5-3-1-3-5-7)', patterns: pattern2(), fingerings: ['5','4','3','2','1','2','3','5'], degrees: [8, 7, 5, 3, 1, 3, 5, 7] },
+  { id: 3, name: 'Pattern 3', description: 'Zigzag ascending (1-3-3-5-5-7-7-8)', patterns: pattern3(), fingerings: ['1','2','2','3','3','4','4','5'], degrees: [1, 3, 3, 5, 5, 7, 7, 8] },
+  { id: 4, name: 'Pattern 4', description: 'Skip intervals (1-5-3-7-5-8-7-3)', patterns: pattern4(), fingerings: ['1','3','2','4','3','5','4','2'], degrees: [1, 5, 3, 7, 5, 8, 7, 3] },
+  { id: 5, name: 'Pattern 5', description: 'Two octave ascending (1-3-5-7-1-3-5-7)', patterns: pattern5(), fingerings: ['1','2','3','4','1','2','3','5'], degrees: [1, 3, 5, 7, 8, 10, 12, 14] },
+  { id: 6, name: 'Pattern 6', description: 'Two octave descending (7-5-3-1-7-5-3-1)', patterns: pattern6(), fingerings: ['5','3','2','1','5','3','2','1'], degrees: [14, 12, 10, 8, 7, 5, 3, 1] },
 ];
 
 export const DIATONIC_CHORD_LABELS = DIATONIC_TONES.map(c => c.label);
+
+/**
+ * Auto-generate natural right-hand fingerings (1-5) from note pitches.
+ * Uses pitch rank within the pattern to assign fingers.
+ * For ≤5 unique pitches: direct rank→finger mapping.
+ * For >5 unique pitches: split into two 4-note groups with thumb-under.
+ */
+export function autoFingering(notes: Pitch[]): string[] {
+  const n = notes.length;
+  if (n === 0) return [];
+
+  const midis = notes.map(p => p.midi);
+  const uniqueSorted = [...new Set(midis)].sort((a, b) => a - b);
+
+  if (uniqueSorted.length <= 5) {
+    const rankMap = new Map<number, number>();
+    uniqueSorted.forEach((m, i) => rankMap.set(m, i + 1));
+    return midis.map(m => String(rankMap.get(m)!));
+  }
+
+  // >5 unique pitches: split into two halves with thumb-under
+  const half = Math.floor(n / 2);
+  const result: string[] = [];
+
+  for (let g = 0; g < 2; g++) {
+    const start = g * half;
+    const end = g === 0 ? half : n;
+    const group = midis.slice(start, end);
+    const gUnique = [...new Set(group)].sort((a, b) => a - b);
+    const gRank = new Map<number, number>();
+    gUnique.forEach((m, i) => gRank.set(m, i + 1));
+
+    const maxRank = gUnique.length;
+    const topMidi = gUnique[gUnique.length - 1];
+    // Use pinky (5) for highest note if it's at a phrase boundary
+    const usePinky = group[0] === topMidi || (g === 1 && group[group.length - 1] === topMidi);
+
+    result.push(...group.map(m => {
+      let r = gRank.get(m)!;
+      if (usePinky && r === maxRank) r = 5;
+      return String(Math.min(r, 5));
+    }));
+  }
+
+  // Post-process: consecutive different notes must not share the same finger
+  for (let i = 1; i < n; i++) {
+    const prevF = parseInt(result[i - 1]);
+    const currF = parseInt(result[i]);
+    if (midis[i] !== midis[i - 1] && currF === prevF) {
+      // Shift finger in the direction of pitch movement
+      if (midis[i] > midis[i - 1]) {
+        result[i] = String(Math.min(currF + 1, 5));
+      } else {
+        result[i] = String(Math.max(currF - 1, 1));
+      }
+    }
+  }
+
+  return result;
+}
 
 /**
  * Transpose an exercise to a different key.

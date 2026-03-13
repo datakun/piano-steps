@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import * as Tone from 'tone';
 import type { MelodyNote } from '../../lib/audio/melodyExtractor';
+import { getPianoSampler, midiToNoteName } from '../../lib/audio/pianoSampler';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -36,7 +37,7 @@ export function usePianoRollPlayback(
   });
 
   // Refs for audio nodes
-  const synthRef = useRef<Tone.PolySynth | null>(null);
+  const samplerRef = useRef<Tone.Sampler | null>(null);
   const playerRef = useRef<Tone.Player | null>(null);
   const blobUrlRef = useRef<string | null>(null);
 
@@ -62,25 +63,14 @@ export function usePianoRollPlayback(
   const midiEnabledRef = useRef(true);
 
   // -----------------------------------------------------------------------
-  // Initialize synth (once)
+  // Initialize piano sampler (shared singleton)
   // -----------------------------------------------------------------------
 
-  const getSynth = useCallback(() => {
-    if (!synthRef.current) {
-      const poly = new Tone.PolySynth(Tone.Synth, {
-        oscillator: { type: 'sine' },
-        envelope: {
-          attack: 0.02,
-          decay: 0.1,
-          sustain: 0.6,
-          release: 0.3,
-        },
-        volume: -8,
-      }).toDestination();
-      poly.maxPolyphony = 8;
-      synthRef.current = poly;
-    }
-    return synthRef.current;
+  const getSampler = useCallback(async () => {
+    if (samplerRef.current) return samplerRef.current;
+    const s = await getPianoSampler();
+    samplerRef.current = s;
+    return s;
   }, []);
 
   // -----------------------------------------------------------------------
@@ -118,7 +108,7 @@ export function usePianoRollPlayback(
   // -----------------------------------------------------------------------
 
   const scheduleNotes = useCallback(
-    (synth: Tone.PolySynth, startOffset: number, startTime: number) => {
+    (sampler: Tone.Sampler, startOffset: number, startTime: number) => {
       for (const note of notes) {
         if (note.startTime + note.duration <= startOffset) continue;
 
@@ -126,9 +116,9 @@ export function usePianoRollPlayback(
         const noteDur = note.duration - (noteStart - note.startTime);
         if (noteDur <= 0) continue;
 
-        const freq = Tone.Frequency(note.pitchMidi, 'midi').toFrequency();
+        const noteName = midiToNoteName(note.pitchMidi);
         const when = startTime + (noteStart - startOffset);
-        synth.triggerAttackRelease(freq, noteDur, when, note.amplitude * 0.7);
+        sampler.triggerAttackRelease(noteName, noteDur, when, note.amplitude * 0.7);
       }
     },
     [notes],
@@ -182,7 +172,7 @@ export function usePianoRollPlayback(
   const play = useCallback(async () => {
     await Tone.start();
 
-    const synth = getSynth();
+    const sampler = await getSampler();
     let player: Tone.Player | null = null;
 
     try {
@@ -205,14 +195,14 @@ export function usePianoRollPlayback(
 
     // Schedule MIDI notes
     if (midiEnabledRef.current) {
-      scheduleNotes(synth, offset, now);
+      scheduleNotes(sampler, offset, now);
     }
 
     playStartTimeRef.current = now;
     statusRef.current = 'playing';
     setState((s) => ({ ...s, status: 'playing' }));
     startTimeTracking();
-  }, [getSynth, getPlayer, scheduleNotes, startTimeTracking]);
+  }, [getSampler, getPlayer, scheduleNotes, startTimeTracking]);
 
   // -----------------------------------------------------------------------
   // Pause
@@ -232,9 +222,9 @@ export function usePianoRollPlayback(
       } catch { /* may not be playing */ }
     }
 
-    // Release all synth notes
-    if (synthRef.current) {
-      synthRef.current.releaseAll();
+    // Release all sampler notes
+    if (samplerRef.current) {
+      samplerRef.current.releaseAll();
     }
 
     statusRef.current = 'paused';
@@ -260,8 +250,8 @@ export function usePianoRollPlayback(
       } catch { /* may not be playing */ }
     }
 
-    if (synthRef.current) {
-      synthRef.current.releaseAll();
+    if (samplerRef.current) {
+      samplerRef.current.releaseAll();
     }
 
     statusRef.current = 'stopped';
@@ -287,8 +277,8 @@ export function usePianoRollPlayback(
       if (playerRef.current) {
         try { playerRef.current.stop(); } catch { /* */ }
       }
-      if (synthRef.current) {
-        synthRef.current.releaseAll();
+      if (samplerRef.current) {
+        samplerRef.current.releaseAll();
       }
 
       seekOffsetRef.current = clampedTime;
@@ -322,8 +312,8 @@ export function usePianoRollPlayback(
     setState((s) => ({ ...s, midiEnabled: enabled }));
 
     // If disabling, release all notes
-    if (!enabled && synthRef.current) {
-      synthRef.current.releaseAll();
+    if (!enabled && samplerRef.current) {
+      samplerRef.current.releaseAll();
     }
   }, []);
 
@@ -335,10 +325,10 @@ export function usePianoRollPlayback(
     return () => {
       cancelAnimationFrame(rafRef.current);
 
-      if (synthRef.current) {
-        synthRef.current.releaseAll();
-        synthRef.current.dispose();
-        synthRef.current = null;
+      // Shared singleton — just release notes, don't dispose
+      if (samplerRef.current) {
+        samplerRef.current.releaseAll();
+        samplerRef.current = null;
       }
 
       if (playerRef.current) {

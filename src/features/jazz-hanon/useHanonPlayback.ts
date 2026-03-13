@@ -2,17 +2,24 @@ import { useEffect, useRef, useCallback } from 'react';
 import * as Tone from 'tone';
 import { useJazzHanonStore } from './jazzHanonStore';
 import { useMetronomeStore } from '../metronome/metronomeStore';
-import { volumeToDb } from '../../lib/audio/metronomeEngine';
+import { volumeToDb, suspendAudioContext } from '../../lib/audio/metronomeEngine';
+import { getPianoSampler, midiToNoteName } from '../../lib/audio/pianoSampler';
+import type { Pitch } from '../../types/music';
 
 /**
  * Hook that integrates Tone.js Transport with Jazz Hanon playback.
  * Fires on eighth notes (8 per measure), clicks on quarter-note positions.
+ * Plays pattern notes via piano sampler on every eighth note.
  * currentBeat = eighth-note index (0-7) for staff activeNoteIndex.
  */
-export function useHanonPlayback() {
+export function useHanonPlayback(patterns?: Pitch[][], bassChords?: Pitch[][]) {
   const loopRef = useRef<Tone.Loop | null>(null);
   const eighthRef = useRef(0);
   const isRepeatingRef = useRef(false);
+
+  // Capture patterns in refs so the Tone.js loop callback reads latest values
+  const patternsRef = useRef<Pitch[][] | undefined>(patterns);
+  patternsRef.current = patterns;
 
   const { playback, play, pause, stop, resetSession, setCurrentMeasure, setCurrentBeat } =
     useJazzHanonStore();
@@ -32,11 +39,20 @@ export function useHanonPlayback() {
     }
     Tone.getTransport().stop();
     Tone.getTransport().position = 0;
+    suspendAudioContext();
   }, []);
 
   const startPlayback = useCallback(async () => {
     await Tone.start();
     cleanup();
+
+    // Load piano sampler (may already be cached)
+    let pianoSampler: Tone.Sampler | null = null;
+    try {
+      pianoSampler = await getPianoSampler();
+    } catch {
+      // Piano failed to load — continue with clicks only
+    }
 
     const totalMeasures = playback.totalMeasures;
     let currentMeasure = playback.currentMeasure;
@@ -66,14 +82,31 @@ export function useHanonPlayback() {
       // Guard: don't fire after end-of-exercise was triggered
       if (stopped) return;
 
+      const eighth = eighthRef.current;
+
       // Play click on quarter-note positions only (0, 2, 4, 6)
-      if (eighthRef.current % 2 === 0) {
-        const isAccent = eighthRef.current === 0;
+      if (eighth % 2 === 0) {
+        const isAccent = eighth === 0;
         const freq = isAccent ? 1200 : 800;
         (isAccent ? clickHigh : clickLow).triggerAttackRelease(freq, '32n', time);
       }
 
-      const eighth = eighthRef.current;
+      // Play pattern note via piano sampler
+      if (pianoSampler) {
+        const curPatterns = patternsRef.current;
+
+        if (curPatterns && currentMeasure < curPatterns.length) {
+          const pattern = curPatterns[currentMeasure];
+          if (pattern && eighth < pattern.length) {
+            const note = pattern[eighth];
+            pianoSampler.triggerAttackRelease(
+              midiToNoteName(note.midi), '8n', time, 0.7,
+            );
+          }
+        }
+
+      }
+
       const measure = currentMeasure;
 
       Tone.getDraw().schedule(() => {

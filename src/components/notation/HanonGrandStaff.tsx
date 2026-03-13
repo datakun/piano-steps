@@ -1,17 +1,18 @@
 import { useRef, useEffect, useState } from 'react';
 import {
   Renderer, Stave, StaveNote, Voice, Formatter,
-  Accidental, StaveConnector, Annotation,
+  Accidental, Annotation, Stem,
 } from 'vexflow';
 import type { Pitch, NoteName } from '../../types/music';
 import { respellForKey } from '../../lib/music/noteUtils';
 
 interface HanonGrandStaffProps {
   trebleNotes: Pitch[];       // 8 eighth notes (arpeggio pattern)
-  bassChord: Pitch[];         // 4-note whole note chord (7th chord)
+  bassChord?: Pitch[];        // (unused, kept for API compat)
   keySignature?: string;      // VexFlow key signature string (e.g., 'Bb', 'G')
   activeNoteIndex?: number;   // Highlight index during playback
   fingeringLabels?: string[]; // Fingering numbers per treble note
+  degreeLabels?: string[];    // Chord degree labels per treble note (e.g., '1','3','5','7')
   height?: number;
   maxStaveWidth?: number;     // Maximum stave width (shrinks on narrow screens)
 }
@@ -22,11 +23,11 @@ function pitchToVexKey(p: Pitch): string {
 
 export default function HanonGrandStaff({
   trebleNotes,
-  bassChord,
   keySignature,
   activeNoteIndex,
   fingeringLabels,
-  height = 260,
+  degreeLabels,
+  height = 160,
   maxStaveWidth = 500,
 }: HanonGrandStaffProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -52,22 +53,16 @@ export default function HanonGrandStaff({
     const useKeySig = !!keySignature;
     const totalWidth = startX + staveWidth + 10;
     const trebleY = 10;
-    const bassY = 120;
 
     const renderer = new Renderer(containerRef.current, Renderer.Backends.SVG);
     renderer.resize(totalWidth, height);
     const context = renderer.getContext();
 
-    // Create staves with clefs and key signature
+    // Create treble stave with clef and key signature
     const trebleStave = new Stave(startX, trebleY, staveWidth);
     trebleStave.addClef('treble');
     if (useKeySig) trebleStave.addKeySignature(keySignature!);
     trebleStave.setContext(context).draw();
-
-    const bassStave = new Stave(startX, bassY, staveWidth);
-    bassStave.addClef('bass');
-    if (useKeySig) bassStave.addKeySignature(keySignature!);
-    bassStave.setContext(context).draw();
 
     // --- Treble Voice: eighth notes ---
     const treblePitches = useKeySig
@@ -75,15 +70,27 @@ export default function HanonGrandStaff({
       : trebleNotes;
 
     const trebleStaveNotes = treblePitches.map((p, i) => {
+      // Stem down for notes at or above C5 (high C, MIDI 72)
+      const origPitch = trebleNotes[i];
+      const stemDir = origPitch && origPitch.midi >= 72 ? Stem.DOWN : Stem.UP;
       const note = new StaveNote({
         keys: [pitchToVexKey(p)],
         duration: '8',
         clef: 'treble',
+        stemDirection: stemDir,
       });
 
       // Highlight active note during playback
       if (activeNoteIndex !== undefined && i === activeNoteIndex) {
         note.setStyle({ fillStyle: '#3b82f6', strokeStyle: '#3b82f6' });
+      }
+
+      // Degree label annotation above note
+      if (degreeLabels?.[i]) {
+        const degAnn = new Annotation(degreeLabels[i]);
+        degAnn.setVerticalJustification(Annotation.VerticalJustify.TOP);
+        degAnn.setFont('Arial', 11, 'bold');
+        note.addModifier(degAnn, 0);
       }
 
       // Fingering annotation below note
@@ -100,65 +107,27 @@ export default function HanonGrandStaff({
     const trebleVoice = new Voice({ numBeats: 4, beatValue: 4 }).setStrict(false);
     trebleVoice.addTickables(trebleStaveNotes);
 
-    // --- Bass Voice: whole note 7th chord ---
-    const bassPitches = useKeySig
-      ? bassChord.map(p => respellForKey(p, keySignature! as NoteName))
-      : bassChord;
-
-    const bassKeys = bassPitches.map(pitchToVexKey);
-    const bassNote = new StaveNote({
-      keys: bassKeys,
-      duration: 'w',
-      clef: 'bass',
-    });
-
-    const bassVoice = new Voice({ numBeats: 4, beatValue: 4 }).setStrict(false);
-    bassVoice.addTickables([bassNote]);
-
     // Apply accidentals
     if (useKeySig) {
       Accidental.applyAccidentals([trebleVoice], keySignature!);
-      Accidental.applyAccidentals([bassVoice], keySignature!);
     } else {
-      // Manual accidentals when no key signature
       treblePitches.forEach((p, i) => {
         const acc = p.name.slice(1);
         if (acc === '#' || acc === 'b') {
           trebleStaveNotes[i].addModifier(new Accidental(acc), 0);
         }
       });
-      bassPitches.forEach((p, idx) => {
-        const acc = p.name.slice(1);
-        if (acc === '#' || acc === 'b') {
-          bassNote.addModifier(new Accidental(acc), idx);
-        }
-      });
     }
 
-    // Format both voices together and draw
+    // Format and draw
     const formatWidth = trebleStave.getNoteEndX() - trebleStave.getNoteStartX() - 10;
     new Formatter()
       .joinVoices([trebleVoice])
-      .joinVoices([bassVoice])
-      .format([trebleVoice, bassVoice], Math.max(formatWidth, 50));
+      .format([trebleVoice], Math.max(formatWidth, 50));
 
     trebleVoice.draw(context, trebleStave);
-    bassVoice.draw(context, bassStave);
 
-    // Draw connectors: brace + barlines
-    const brace = new StaveConnector(trebleStave, bassStave);
-    brace.setType('brace');
-    brace.setContext(context).draw();
-
-    const lineLeft = new StaveConnector(trebleStave, bassStave);
-    lineLeft.setType('singleLeft');
-    lineLeft.setContext(context).draw();
-
-    const lineRight = new StaveConnector(trebleStave, bassStave);
-    lineRight.setType('singleRight');
-    lineRight.setContext(context).draw();
-
-  }, [trebleNotes, bassChord, keySignature, activeNoteIndex, fingeringLabels, height, maxStaveWidth, measuredWidth]);
+  }, [trebleNotes, keySignature, activeNoteIndex, fingeringLabels, degreeLabels, height, maxStaveWidth, measuredWidth]);
 
   return <div ref={containerRef} />;
 }

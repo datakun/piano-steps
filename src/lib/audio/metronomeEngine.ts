@@ -2,6 +2,18 @@ import * as Tone from 'tone';
 
 export type MetronomeTickCallback = (beat: number, time: number) => void;
 
+/**
+ * Suspend the Tone.js AudioContext to release the media session.
+ * Dismisses the lock screen media widget on mobile devices.
+ * Safe to call when nothing is playing — resume happens via Tone.start().
+ */
+export function suspendAudioContext() {
+  const ctx = Tone.getContext().rawContext as AudioContext | undefined;
+  if (ctx && ctx.state === 'running' && typeof ctx.suspend === 'function') {
+    ctx.suspend();
+  }
+}
+
 /** Convert 0–100 percentage to dB for the accent (high) click. */
 export function volumeToDb(percent: number): number {
   if (percent <= 0) return -Infinity;
@@ -94,6 +106,9 @@ class MetronomeEngine {
     Tone.getTransport().position = 0;
     this._isPlaying = false;
     this._beat = 0;
+
+    // Suspend AudioContext to dismiss mobile lock screen media widget
+    suspendAudioContext();
   }
 
   setBpm(bpm: number) {
