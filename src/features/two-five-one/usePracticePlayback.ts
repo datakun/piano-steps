@@ -161,6 +161,7 @@ export function usePracticePlayback() {
   const pausePlayback = useCallback(() => {
     Tone.getTransport().pause();
     pause();
+    suspendAudioContext();
   }, [pause]);
 
   const stopPlayback = useCallback(() => {

@@ -142,6 +142,7 @@ export function useHanonPlayback(patterns?: Pitch[][], bassChords?: Pitch[][]) {
   const pausePlayback = useCallback(() => {
     Tone.getTransport().pause();
     pause();
+    suspendAudioContext();
   }, [pause]);
 
   const stopPlayback = useCallback(() => {
