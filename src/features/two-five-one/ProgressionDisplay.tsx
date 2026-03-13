@@ -112,7 +112,7 @@ export default function ProgressionDisplay({
       symbol: voicing.chord.symbol,
       highlights,
       startOctave: minOct,
-      octaves: Math.max(2, maxOct - minOct + 1),
+      octaves: 3,
     };
   }, [selectedChordIdx, progression]);
 

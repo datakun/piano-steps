@@ -2,7 +2,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import * as Tone from 'tone';
 import { useTwoFiveOneStore } from './twoFiveOneStore';
 import { useMetronomeStore } from '../metronome/metronomeStore';
-import { volumeToDb, suspendAudioContext } from '../../lib/audio/metronomeEngine';
+import { volumeToDb, setMediaSessionPlaying, setMediaSessionPaused, setMediaSessionStopped } from '../../lib/audio/metronomeEngine';
 import { getPianoSampler, midiToNoteName } from '../../lib/audio/pianoSampler';
 
 /**
@@ -40,7 +40,7 @@ export function usePracticePlayback() {
     }
     Tone.getTransport().stop();
     Tone.getTransport().position = 0;
-    suspendAudioContext();
+    setMediaSessionStopped();
   }, []);
 
   const startPlayback = useCallback(async () => {
@@ -155,13 +155,14 @@ export function usePracticePlayback() {
 
     loopRef.current.start(0);
     Tone.getTransport().start();
+    setMediaSessionPlaying();
     play();
   }, [bpm, volume, beatsPerMeasure, compound, playback.totalMeasures, playback.currentMeasure, cleanup, play, stop, setCurrentMeasure, setCurrentBeat]);
 
   const pausePlayback = useCallback(() => {
     Tone.getTransport().pause();
     pause();
-    suspendAudioContext();
+    setMediaSessionPaused();
   }, [pause]);
 
   const stopPlayback = useCallback(() => {

@@ -2,7 +2,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import * as Tone from 'tone';
 import { useJazzHanonStore } from './jazzHanonStore';
 import { useMetronomeStore } from '../metronome/metronomeStore';
-import { volumeToDb, suspendAudioContext } from '../../lib/audio/metronomeEngine';
+import { volumeToDb, setMediaSessionPlaying, setMediaSessionPaused, setMediaSessionStopped } from '../../lib/audio/metronomeEngine';
 import { getPianoSampler, midiToNoteName } from '../../lib/audio/pianoSampler';
 import type { Pitch } from '../../types/music';
 
@@ -39,7 +39,7 @@ export function useHanonPlayback(patterns?: Pitch[][], bassChords?: Pitch[][]) {
     }
     Tone.getTransport().stop();
     Tone.getTransport().position = 0;
-    suspendAudioContext();
+    setMediaSessionStopped();
   }, []);
 
   const startPlayback = useCallback(async () => {
@@ -136,13 +136,14 @@ export function useHanonPlayback(patterns?: Pitch[][], bassChords?: Pitch[][]) {
 
     loopRef.current.start(0);
     Tone.getTransport().start();
+    setMediaSessionPlaying();
     play();
   }, [bpm, volume, playback.totalMeasures, playback.currentMeasure, cleanup, play, stop, setCurrentMeasure, setCurrentBeat]);
 
   const pausePlayback = useCallback(() => {
     Tone.getTransport().pause();
     pause();
-    suspendAudioContext();
+    setMediaSessionPaused();
   }, [pause]);
 
   const stopPlayback = useCallback(() => {

@@ -14,6 +14,34 @@ export function suspendAudioContext() {
   }
 }
 
+// ── Media Session API helpers ──────────────────────────────────
+// Controls the mobile lock screen media widget state.
+
+/** Set media widget to "playing" state. */
+export function setMediaSessionPlaying() {
+  if ('mediaSession' in navigator) {
+    navigator.mediaSession.playbackState = 'playing';
+  }
+}
+
+/** Set media widget to "paused" state (widget stays visible). */
+export function setMediaSessionPaused() {
+  if ('mediaSession' in navigator) {
+    navigator.mediaSession.playbackState = 'paused';
+  }
+}
+
+/**
+ * Dismiss the media widget entirely.
+ * Sets playbackState to "none" and suspends AudioContext.
+ */
+export function setMediaSessionStopped() {
+  if ('mediaSession' in navigator) {
+    navigator.mediaSession.playbackState = 'none';
+  }
+  suspendAudioContext();
+}
+
 /** Convert 0–100 percentage to dB for the accent (high) click. */
 export function volumeToDb(percent: number): number {
   if (percent <= 0) return -Infinity;
@@ -94,6 +122,7 @@ class MetronomeEngine {
     this.loop.start(0);
     Tone.getTransport().start();
     this._isPlaying = true;
+    setMediaSessionPlaying();
   }
 
   stop() {
@@ -107,8 +136,8 @@ class MetronomeEngine {
     this._isPlaying = false;
     this._beat = 0;
 
-    // Suspend AudioContext to dismiss mobile lock screen media widget
-    suspendAudioContext();
+    // Dismiss mobile lock screen media widget
+    setMediaSessionStopped();
   }
 
   setBpm(bpm: number) {
