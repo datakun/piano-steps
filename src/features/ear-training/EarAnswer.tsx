@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import {
   DURATIONS,
   chordSetTypes,
@@ -12,6 +13,7 @@ import {
   type VoicedChord,
 } from './earTraining';
 import { VOICE_BEAT_COUNT, useEarTrainingStore } from './earTrainingStore';
+import EarStaff, { type StaffItem } from './EarStaff';
 
 function durationLabel(e: MelodyEvent): string {
   return DURATIONS.find(d => d.beats === e.beats && d.rest === (e.midi === null))?.label ?? `${e.beats}박`;
@@ -141,8 +143,54 @@ function chordLine(ctx: KeyContext, c: VoicedChord): string {
   return `${chordSymbol(ctx, c)}: ${c.notes.map(m => noteLabel(ctx, m)).join(', ')}`;
 }
 
-/** 정답 내용 */
+const BEATS_TO_VEX: Record<number, { duration: string; dotted?: boolean }> = {
+  4: { duration: 'w' },
+  3: { duration: 'h', dotted: true },
+  2: { duration: 'h' },
+  1.5: { duration: 'q', dotted: true },
+  1: { duration: 'q' },
+  0.5: { duration: '8' },
+};
+
+/** 정답을 악보로 옮긴 음표 목록 */
+function staffItems(q: Question): StaffItem[] {
+  const twoNotes = (notes: [number, number], harmonic: boolean, label?: string): StaffItem[] =>
+    harmonic
+      ? [{ midis: notes, duration: 'h', label }]
+      : [{ midis: [notes[0]], duration: 'q', label }, { midis: [notes[1]], duration: 'q' }];
+
+  switch (q.kind) {
+    case 'step':
+    case 'interval':
+      return twoNotes(q.notes, q.harmonic);
+    case 'compare':
+      return [...twoNotes(q.a, false, 'A'), ...twoNotes(q.b, false, 'B')];
+    case 'chord':
+      return [{ midis: q.chord.notes, duration: 'w' }];
+    case 'chord-same':
+      return [{ midis: q.first.notes, duration: 'h' }, { midis: q.second.notes, duration: 'h' }];
+    case 'melody':
+      return q.events.map(e => ({
+        midis: e.midi === null ? [] : [e.midi],
+        ...(q.rhythm ? BEATS_TO_VEX[e.beats] : { duration: 'q' }),
+      }));
+    case 'voices':
+      return q.beats.map(beat => ({ midis: beat, duration: 'q' }));
+  }
+}
+
+/** 정답 내용: 악보 + 글자 */
 export function AnswerDetail({ question, ctx }: { question: Question; ctx: KeyContext }) {
+  const items = useMemo(() => staffItems(question), [question]);
+  return (
+    <div className="space-y-2">
+      <EarStaff ctx={ctx} items={items} />
+      <AnswerText question={question} ctx={ctx} />
+    </div>
+  );
+}
+
+function AnswerText({ question, ctx }: { question: Question; ctx: KeyContext }) {
   const labels = (notes: number[]) => notes.map(m => noteLabel(ctx, m)).join(' → ');
 
   switch (question.kind) {
