@@ -24,6 +24,7 @@ export type ChordQuality =
   | 'm7b5'    // Half-diminished (Minor 7 flat 5)
   | 'mM7'     // Minor Major 7
   | 'dim7'    // Diminished 7
+  | 'aug'     // Augmented triad
   | '6'       // Major 6
   | 'm6';     // Minor 6
 

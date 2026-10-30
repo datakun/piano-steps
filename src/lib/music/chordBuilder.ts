@@ -10,6 +10,7 @@ export const CHORD_INTERVALS: Record<ChordQuality, number[]> = {
   'm7b5':  [0, 3, 6, 10],     // 1, b3, b5, b7
   'mM7':   [0, 3, 7, 11],     // 1, b3, 5, 7
   'dim7':  [0, 3, 6, 9],      // 1, b3, b5, bb7
+  'aug':   [0, 4, 8],         // 1, 3, #5
   '6':     [0, 4, 7, 9],      // 1, 3, 5, 6
   'm6':    [0, 3, 7, 9],      // 1, b3, 5, 6
 };
@@ -23,6 +24,7 @@ export const TENSION_RULES: Record<ChordQuality, { available: number[]; avoid: n
   'm7b5':  { available: [11], avoid: [] },
   'mM7':   { available: [9, 11], avoid: [] },
   'dim7':  { available: [], avoid: [] },
+  'aug':   { available: [], avoid: [] },
   '6':     { available: [9], avoid: [] },
   'm6':    { available: [9], avoid: [] },
 };
@@ -36,7 +38,7 @@ export const TENSION_INTERVALS: Record<number, number> = {
 
 /** Create a chord definition */
 export function createChord(root: NoteName, quality: ChordQuality): ChordDefinition {
-  const qualityDisplay = quality === 'mM7' ? '-(maj7)' : quality === 'dim7' ? '\u00B07' : quality;
+  const qualityDisplay = quality === 'mM7' ? '-(maj7)' : quality === 'dim7' ? '\u00B07' : quality === 'aug' ? 'aug' : quality;
   return {
     root,
     quality,
@@ -68,6 +70,7 @@ export function getChordDegreeLabels(quality: ChordQuality): string[] {
     'm7b5':  ['1', '\u266D3', '\u266D5', '\u266D7'],
     'mM7':   ['1', '\u266D3', '5', '7'],
     'dim7':  ['1', '\u266D3', '\u266D5', '\u266D\u266D7'],
+    'aug':   ['1', '3', '\u266F5'],
     '6':     ['1', '3', '5', '6'],
     'm6':    ['1', '\u266D3', '5', '6'],
   };

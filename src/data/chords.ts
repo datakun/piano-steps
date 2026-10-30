@@ -7,7 +7,7 @@ export const ALL_ROOTS: NoteName[] = [
 
 /** All chord qualities available in the cheat sheet */
 export const ALL_QUALITIES: ChordQuality[] = [
-  'M7', '7', 'm7', '7sus4', 'm7b5', 'mM7', 'dim7', '6', 'm6',
+  'M7', '7', 'm7', '7sus4', 'm7b5', 'mM7', 'dim7', 'aug', '6', 'm6',
 ];
 
 /** Display names for chord qualities */
@@ -19,6 +19,7 @@ export const QUALITY_DISPLAY: Record<ChordQuality, string> = {
   'm7b5': 'm7\u266D5',
   'mM7': '-(maj7)',
   'dim7': '\u00B07',
+  'aug': 'aug',
   '6': '6',
   'm6': 'm6',
 };
