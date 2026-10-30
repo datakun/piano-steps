@@ -27,10 +27,10 @@ export default function EarStaff({ ctx, items }: { ctx: KeyContext; items: Staff
 
   useEffect(() => {
     const el = containerRef.current;
-    if (!el || items.length === 0) return;
+    if (!el) return;
     el.innerHTML = '';
 
-    const staveWidth = 90 + items.length * NOTE_SPACING;
+    const staveWidth = 90 + Math.max(items.length, 2) * NOTE_SPACING;
     const renderer = new Renderer(el, Renderer.Backends.SVG);
     renderer.resize(staveWidth + 20, HEIGHT);
     const context = renderer.getContext();
@@ -38,6 +38,7 @@ export default function EarStaff({ ctx, items }: { ctx: KeyContext; items: Staff
     const stave = new Stave(10, 30, staveWidth);
     stave.addClef('treble').addKeySignature(ctx.key);
     stave.setContext(context).draw();
+    if (items.length === 0) return;
 
     const notes = items.map(item => {
       const rest = item.midis.length === 0;

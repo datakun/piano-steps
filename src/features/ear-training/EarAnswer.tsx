@@ -7,6 +7,7 @@ import {
   noteLabel,
   rhythmDurations,
   spell,
+  type AnswerInput,
   type KeyContext,
   type MelodyEvent,
   type Question,
@@ -50,8 +51,10 @@ function Chips({ items }: { items: string[] }) {
 export function AnswerInputPanel() {
   const { question, input, ctx, duration, melodyRhythm, chordSet, choose, setDuration, addRest } =
     useEarTrainingStore();
+  const inputItems = useMemo(() => (question ? inputStaffItems(question, input) : []), [question, input]);
   if (!question) return null;
   const name = (m: number) => spell(ctx, m).pcName;
+  const staff = <EarStaff ctx={ctx} items={inputItems} />;
 
   switch (question.kind) {
     case 'step':
@@ -77,7 +80,12 @@ export function AnswerInputPanel() {
         </div>
       );
     case 'interval':
-      return <Chips items={input.notes.map(name)} />;
+      return (
+        <div className="space-y-2">
+          {staff}
+          <Chips items={input.notes.map(name)} />
+        </div>
+      );
     case 'chord':
       return (
         <div className="space-y-2">
@@ -92,6 +100,7 @@ export function AnswerInputPanel() {
               />
             ))}
           </div>
+          {staff}
           <Chips items={[...input.notes].sort((a, b) => a - b).map(name)} />
         </div>
       );
@@ -112,6 +121,7 @@ export function AnswerInputPanel() {
               ))}
             </div>
           )}
+          {staff}
           <Chips
             items={input.events.map(e =>
               question.rhythm
@@ -128,6 +138,7 @@ export function AnswerInputPanel() {
           <div className="text-gray-500">
             {input.beats.length + 1} / {VOICE_BEAT_COUNT} 박: 음을 누르고 Enter
           </div>
+          {staff}
           <Chips items={[...input.notes].sort((a, b) => a - b).map(name)} />
           {input.beats.length > 0 && (
             <div className="text-gray-400">
@@ -151,6 +162,28 @@ const BEATS_TO_VEX: Record<number, { duration: string; dotted?: boolean }> = {
   1: { duration: 'q' },
   0.5: { duration: '8' },
 };
+
+/** 입력 중인 답을 악보로 옮긴 음표 목록 */
+function inputStaffItems(q: Question, input: AnswerInput): StaffItem[] {
+  switch (q.kind) {
+    case 'interval':
+      return q.harmonic
+        ? (input.notes.length > 0 ? [{ midis: input.notes, duration: 'h' }] : [])
+        : input.notes.map(m => ({ midis: [m], duration: 'q' }));
+    case 'chord':
+      return input.notes.length > 0 ? [{ midis: input.notes, duration: 'w' }] : [];
+    case 'melody':
+      return input.events.map(e => ({
+        midis: e.midi === null ? [] : [e.midi],
+        ...(q.rhythm ? BEATS_TO_VEX[e.beats] : { duration: 'q' }),
+      }));
+    case 'voices':
+      return [...input.beats, ...(input.notes.length > 0 ? [input.notes] : [])]
+        .map(beat => ({ midis: beat, duration: 'q' }));
+    default:
+      return [];
+  }
+}
 
 /** 정답을 악보로 옮긴 음표 목록 */
 function staffItems(q: Question): StaffItem[] {
