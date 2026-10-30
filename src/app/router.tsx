@@ -8,6 +8,7 @@ import JazzHanonPage from '../features/jazz-hanon/JazzHanonPage';
 import ChordDetectPage from '../features/chord-detect/ChordDetectPage';
 import ChordSensePage from '../features/chord-sense/ChordSensePage';
 import HummingPage from '../features/humming/HummingPage';
+import EarTrainingPage from '../features/ear-training/EarTrainingPage';
 
 export const router = createBrowserRouter([
   {
@@ -22,6 +23,7 @@ export const router = createBrowserRouter([
       { path: 'chord-detect', element: <ChordDetectPage /> },
       { path: 'chord-sense', element: <ChordSensePage /> },
       { path: 'humming', element: <HummingPage /> },
+      { path: 'ear-training', element: <EarTrainingPage /> },
     ],
   },
 ]);

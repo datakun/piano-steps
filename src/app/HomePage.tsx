@@ -43,6 +43,12 @@ const modules = [
     description: '허밍으로 멜로디 → MIDI 변환',
     icon: '🎙️',
   },
+  {
+    to: '/ear-training',
+    title: 'Ear Training',
+    description: '상대음감 청음: 음정, 화음, 선율, 2·3성부',
+    icon: '👂',
+  },
 ];
 
 export default function HomePage() {

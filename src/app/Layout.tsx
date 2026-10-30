@@ -10,6 +10,7 @@ const navItems = [
   { to: '/chord-detect', label: 'Detect', emoji: '🎤' },
   { to: '/chord-sense', label: 'Sense', emoji: '🎧' },
   { to: '/humming', label: 'Humming', emoji: '🎙️' },
+  { to: '/ear-training', label: 'Ear Training', emoji: '👂' },
 ];
 
 /** Hamburger menu icon */
