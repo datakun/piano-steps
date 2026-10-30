@@ -73,12 +73,13 @@ const INTERVAL_TABLE: [string, number][] = [
   ['감', 5], ['완전', 5], ['단', 6], ['장', 6], ['단', 7], ['장', 7],
 ];
 
-/** 반음 수 → 음정 이름. 트라이톤은 감5도로 적는다. */
+/** 반음 수 → 음정 이름. 트라이톤은 감5도와 증4도를 함께 적는다. */
 export function intervalName(semitones: number): string {
   const s = Math.abs(semitones);
   if (s === 12) return '완전8도';
   const [quality, number] = INTERVAL_TABLE[s % 12];
   const octaves = Math.floor(s / 12);
+  if (s % 12 === 6) return `감${5 + octaves * 7}도/증${4 + octaves * 7}도`;
   return `${quality}${number + octaves * 7}도`;
 }
 
